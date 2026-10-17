@@ -145,6 +145,7 @@ button{font-family:inherit;font-size:inherit;cursor:pointer}
     </div>
     <div class="row" style="margin-top:10px">
       <button class="btn ghost" id="shsite" onclick="shareSite()">친구에게 보내기</button>
+      <button class="btn ghost" id="cpsite" onclick="copySite()">링크 복사</button>
     </div>
     <p class="note" style="text-align:center">성인 기준으로 만들었습니다. 혼전 관계·성병 검사 같은 성 가치관 문항이 포함되어 있습니다.<br>답은 이 브라우저에만 저장됩니다. 서버로 가지 않습니다.</p>
     <p style="font-size:12.5px;color:var(--muted);text-align:center;margin:14px 0 0">제작자 : 엘제유</p>
@@ -508,6 +509,13 @@ async function shareLink(text,b){
   }catch(e){ if(e&&e.name==='AbortError')return }
   // 공유 기능이 없으면 복사로 대신한다. 이때는 주소를 글 뒤에 붙인다
   try{ await navigator.clipboard.writeText(text?text+'\n'+SITE:SITE); flash(b,'복사됨') }
+  catch(e){ flash(b,'복사 안 됨') }
+}
+// 공유창을 거치지 않고 주소만 바로 복사한다.
+// 윈도우 공유창에 '링크 복사'가 있을지는 윈도우가 정하므로, 직접 버튼을 둔다
+async function copySite(){
+  const b=document.getElementById('cpsite');
+  try{ await navigator.clipboard.writeText(SITE); flash(b,'복사됨') }
   catch(e){ flash(b,'복사 안 됨') }
 }
 // 시작 화면: 주소만 보낸다. 설명은 미리보기 카드가 대신한다
