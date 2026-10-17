@@ -195,7 +195,7 @@ button{font-family:inherit;font-size:inherit;cursor:pointer}
     <div style="margin-top:40px;border-top:1px solid var(--line);padding-top:28px">
       <span class="eyebrow">상대 코드 넣기</span>
       <h3 style="font-size:19px;margin:8px 0 14px">받은 코드를 넣으면 비교됩니다</h3>
-      <input class="field" id="partner" placeholder="••••-••••-••••-••••-••••" autocomplete="off" inputmode="latin">
+      <input class="field" id="partner" placeholder="••••-••••-••••-••••-••••" autocomplete="off" autocapitalize="characters" autocorrect="off" spellcheck="false">
       <p id="err" style="color:var(--gap);font-size:13px;margin:8px 0 0" hidden></p>
       <button class="btn" style="margin-top:14px" onclick="compare()">비교하기</button>
     </div>
@@ -206,8 +206,8 @@ button{font-family:inherit;font-size:inherit;cursor:pointer}
     <span class="eyebrow">코드 비교</span>
     <h2 style="font-size:24px;margin:8px 0 6px">두 사람의 코드를 넣으세요</h2>
     <p style="color:var(--muted);font-size:14.5px;margin:0 0 18px">아직 체크를 안 했다면 먼저 시작하기를 눌러 코드를 만드세요.</p>
-    <input class="field" id="c1" placeholder="내 코드" autocomplete="off" style="margin-bottom:10px">
-    <input class="field" id="c2" placeholder="상대 코드" autocomplete="off">
+    <input class="field" id="c1" placeholder="내 코드" autocomplete="off" autocapitalize="characters" autocorrect="off" spellcheck="false" style="margin-bottom:10px">
+    <input class="field" id="c2" placeholder="상대 코드" autocomplete="off" autocapitalize="characters" autocorrect="off" spellcheck="false">
     <p id="err2" style="color:var(--gap);font-size:13px;margin:8px 0 0" hidden></p>
     <div class="row" style="margin-top:14px">
       <button class="btn" onclick="compare2()">비교하기</button>
