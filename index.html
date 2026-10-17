@@ -500,28 +500,30 @@ function flash(b,msg){
   b.textContent=msg;
   setTimeout(function(){b.textContent=b.dataset.label},2000);
 }
-// 글을 공유한다. 공유 기능이 없는 환경이면 복사로 대신한다
-async function shareText(text,b){
+// 주소는 글에 섞지 말고 url 자리로 따로 넘긴다.
+// 그래야 윈도우 공유창이 링크로 알아보고 '링크 복사'를 띄운다
+async function shareLink(text,b){
   try{
-    if(navigator.share){ await navigator.share({text:text}); return }
+    if(navigator.share){ await navigator.share(text?{text:text,url:SITE}:{url:SITE}); return }
   }catch(e){ if(e&&e.name==='AbortError')return }
-  try{ await navigator.clipboard.writeText(text); flash(b,'복사됨') }
+  // 공유 기능이 없으면 복사로 대신한다. 이때는 주소를 글 뒤에 붙인다
+  try{ await navigator.clipboard.writeText(text?text+'\n'+SITE:SITE); flash(b,'복사됨') }
   catch(e){ flash(b,'복사 안 됨') }
 }
-// 시작 화면: 링크만 보낸다. 설명은 미리보기 카드가 대신한다
+// 시작 화면: 주소만 보낸다. 설명은 미리보기 카드가 대신한다
 function shareSite(){
-  shareText(SITE,document.getElementById('shsite'));
+  shareLink('',document.getElementById('shsite'));
 }
-// 상대에게 링크와 내 코드를 한 번에 보낸다
+// 상대에게 주소와 내 코드를 한 번에 보낸다
 function shareCode(){
   if(!myCode)return;
-  shareText('연애 전 맞춰보기\n25개 문항에 답하고 내 코드를 넣어줘\n\n내 코드 : '+pretty(myCode)+'\n'+SITE,
+  shareLink('연애 전 맞춰보기\n25개 문항에 답하고 내 코드를 넣어줘\n\n내 코드 : '+pretty(myCode),
             document.getElementById('shcode'));
 }
-// 결과 공유는 글과 링크만 보낸다. 이미지는 '이미지 저장' 쪽에서 받는다
+// 결과 공유는 글과 주소만. 이미지는 '이미지 저장' 쪽에서 받는다
 function shareResult(){
   if(!last)return;
-  shareText('연애 전 맞춰보기\n'+last.pct+'% · '+tierOf(last.pct)+'\n\n'+SITE,
+  shareLink('연애 전 맞춰보기\n'+last.pct+'% · '+tierOf(last.pct),
             document.getElementById('shres'));
 }
 
