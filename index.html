@@ -483,10 +483,13 @@ function drawCard(){
   });
   x.textAlign='center';
   x.fillStyle=MUT;x.font='400 28px '+B;
-  x.fillText(Q.length+'개 항목 중 '+last.total+'개 비교',W/2,1065);
-  x.fillStyle=LINE;x.beginPath();x.moveTo(380,1110);x.lineTo(W-380,1110);x.stroke();
-  x.fillStyle=MUT;x.font='400 30px '+B;
-  x.fillText('제작자 : 엘제유',W/2,1165);
+  x.fillText(Q.length+'개 항목 중 '+last.total+'개 비교',W/2,1055);
+  x.strokeStyle=LINE;x.beginPath();x.moveTo(380,1098);x.lineTo(W-380,1098);x.stroke();
+  // 주소를 그림 안에 넣는다. 공유창이 글을 버려도 주소는 그림과 함께 간다
+  x.fillStyle=AC;x.font='500 29px '+B;
+  x.fillText(SITE.replace(/^https?:\/\//,'').replace(/\/$/,''),W/2,1148);
+  x.fillStyle=MUT;x.font='400 26px '+B;
+  x.fillText('제작자 : 엘제유',W/2,1192);
   return c;
 }
 // 공유에 함께 보낼 사이트 주소. 주소를 옮기면 이 한 줄만 고치면 된다
@@ -515,26 +518,11 @@ function shareCode(){
   shareText('연애 전 맞춰보기\n25개 문항에 답하고 내 코드를 넣어줘\n\n내 코드 : '+pretty(myCode)+'\n'+SITE,
             document.getElementById('shcode'));
 }
-// 결과 카드 이미지와 함께 공유한다. 이미지가 안 되면 글만 보낸다
-async function shareResult(){
+// 결과 공유는 글과 링크만 보낸다. 이미지는 '이미지 저장' 쪽에서 받는다
+function shareResult(){
   if(!last)return;
-  const b=document.getElementById('shres');
-  const text='연애 전 맞춰보기\n'+last.pct+'% · '+tierOf(last.pct)+'\n'+SITE;
-  let blob=null;
-  try{
-    try{await document.fonts.ready}catch(e){}
-    const c=drawCard();
-    blob=await new Promise(function(res){ if(c.toBlob)c.toBlob(res,'image/png'); else res(null) });
-  }catch(e){}
-  if(blob){
-    try{
-      const f=new File([blob],'match-'+last.pct+'.png',{type:'image/png'});
-      if(navigator.canShare&&navigator.canShare({files:[f]})){
-        await navigator.share({files:[f],text:text}); return;
-      }
-    }catch(e){ if(e&&e.name==='AbortError')return }
-  }
-  shareText(text,b);
+  shareText('연애 전 맞춰보기\n'+last.pct+'% · '+tierOf(last.pct)+'\n\n'+SITE,
+            document.getElementById('shres'));
 }
 
 // 클로드 아티팩트 안에서는 일반 다운로드가 막혀 있고, 이 기능이 그 통로다.
