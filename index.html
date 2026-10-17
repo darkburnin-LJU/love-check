@@ -534,6 +534,10 @@ function copyResult(){
 
 // 클로드 아티팩트 안에서는 일반 다운로드가 막혀 있고, 이 기능이 그 통로다.
 // 준비되는 데 시간이 걸리므로 화면이 열릴 때 미리 받아둔다
+// 아이폰은 파일 저장을 다르게 다뤄서, 눌러도 안 될 수 있다.
+// 성공 여부를 알 방법이 없으므로 안내만 덧붙인다
+const IOS=/iPad|iPhone|iPod/.test(navigator.userAgent)||
+          (navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
 let dlCap=null;
 try{
   if(window.claude&&typeof claude.use==='function')
@@ -600,7 +604,14 @@ async function saveImage(){
     const r=await plan[i][1]();
     if(r==='none'){ log.push(plan[i][0]+':없음'); continue }
     log.push(plan[i][0]+':'+r);
-    if(r==='saved'||r==='delivered'||r==='requested'){ reset('저장됨'); say(''); return }
+    if(r==='requested'){                 // 브라우저에 넘기기만 했고 결과는 알 수 없다
+      reset('저장됨');
+      if(IOS){ say('저장이 안 됐으면 카드를 화면 캡처해 주세요');
+               setTimeout(function(){ if(st.textContent.indexOf('캡처')>=0)say('') },7000) }
+      else say('');
+      return;
+    }
+    if(r==='saved'||r==='delivered'){ reset('저장됨'); say(''); return }
     if(r==='ERR:AbortError'||r==='ERR:declined'){ reset(); say(''); return }   // 취소는 오류가 아니다
     // 그 밖의 오류면 다음 방법으로 넘어간다
   }
