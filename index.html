@@ -142,6 +142,7 @@ button{font-family:inherit;font-size:inherit;cursor:pointer}
     <div class="row">
       <button class="btn" onclick="start()">시작하기</button>
       <button class="btn ghost" onclick="go('compare')">코드 받았어요</button>
+      <button class="btn" id="resume" onclick="resume()" hidden></button>
     </div>
     <div class="row" style="margin-top:10px">
       <button class="btn ghost" id="cpsite" onclick="copySite()">링크 복사</button>
@@ -288,21 +289,61 @@ const SEC=[
 const KEY='lovechk-v1';
 let ans=new Array(Q.length).fill(null), cur=0, share=true, lock=false;
 
-try{const s=localStorage.getItem(KEY); if(s){const p=JSON.parse(s); if(Array.isArray(p)&&p.length===Q.length) ans=p;}}catch(e){}
-function save(){try{localStorage.setItem(KEY,JSON.stringify(ans))}catch(e){}}
+let savedCur=0;
+try{const s=localStorage.getItem(KEY); if(s){const p=JSON.parse(s);
+  if(Array.isArray(p)&&p.length===Q.length){ans=p}                       // 옛 형식
+  else if(p&&Array.isArray(p.a)&&p.a.length===Q.length){ans=p.a;savedCur=p.c|0}
+}}catch(e){}
+function save(){try{localStorage.setItem(KEY,JSON.stringify({a:ans,c:cur}))}catch(e){}}
 
 function clearInputs(){
   ['partner','c1','c2'].forEach(id=>{const e=document.getElementById(id);if(e)e.value=''});
   ['err','err2'].forEach(id=>{const e=document.getElementById(id);if(e)e.hidden=true});
 }
-function go(id){
+// 화면만 바꾼다
+function showScreen(id){
   if(id==='intro'||id==='quiz')clearInputs();
+  if(id==='intro')showResumeBtn();
   ['intro','quiz','share','result','compare','diff'].forEach(n=>document.getElementById('s-'+n).hidden=(n!==id));
   window.scrollTo(0,0);
 }
+// 화면을 바꾸면서 브라우저 기록에도 남긴다.
+// 이걸 안 하면 휴대폰 뒤로가기 한 번에 사이트를 떠나버린다
+let navLock=false;
+function go(id){
+  showScreen(id);
+  if(!navLock){try{history.pushState({s:id,c:cur},'')}catch(e){}}
+}
+function markQ(){ if(!navLock){try{history.pushState({s:'quiz',c:cur},'')}catch(e){}} }
+window.addEventListener('popstate',function(ev){
+  const st=ev.state;
+  if(!st)return;                      // 더 뒤는 사이트 밖이다
+  navLock=true;
+  try{
+    if(typeof st.c==='number')cur=st.c;
+    if(st.s==='quiz')renderQ();
+    showScreen(st.s);
+  }catch(e){}
+  navLock=false;
+});
+try{history.replaceState({s:'intro',c:0},'')}catch(e){}
 function start(){
   ans=new Array(Q.length).fill(null);cur=0;share=true;myCode='';save();
   renderQ();go('quiz');
+}
+// 풀다 만 답이 남아 있으면 이어서 하기 버튼을 보여준다
+function resume(){
+  let i=ans.indexOf(null); if(i<0)i=Math.min(savedCur,Q.length-1);
+  cur=i; share=true; myCode='';
+  renderQ();go('quiz');
+}
+function showResumeBtn(){
+  const b=document.getElementById('resume'); if(!b)return;
+  const done=ans.filter(function(x){return x!==null}).length;
+  if(done>0&&done<Q.length){
+    b.textContent='이어서 하기 ('+(done+1)+'번째부터)';
+    b.hidden=false;
+  }else b.hidden=true;
 }
 
 function renderQ(){
@@ -324,7 +365,7 @@ function pick(j){
 }
 function advance(){
   if(cur>=Q.length-1){go('share');return}
-  cur++;renderQ();window.scrollTo(0,0);
+  cur++;save();renderQ();markQ();window.scrollTo(0,0);
 }
 function prevQ(){
   if(cur===0)return;
@@ -720,6 +761,7 @@ function renderDiff(a,b,show){
     blk('얘기해볼 것',gaps,'g')+blk('비슷함',mids,'m')+blk('일치',oks,'o')+skipnote;
   go('diff');
 }
+showResumeBtn();
 </script>
 </body>
 </html>
