@@ -1,0 +1,641 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="description" content="두 사람이 각자 25개 문항에 답하고 코드를 주고받아, 어디가 얼마나 다른지 비교해보는 연애 전 체크리스트입니다.">
+<meta name="theme-color" content="#FBF8F7">
+<meta property="og:type" content="website">
+<meta property="og:title" content="연애 전 맞춰보기">
+<meta property="og:description" content="25개 문항에 답하고 코드를 교환해 서로 어디가 다른지 비교해보세요.">
+<meta property="og:locale" content="ko_KR">
+<title>연애 전 맞춰보기</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&family=Noto+Sans+KR:wght@400;500;700&display=swap">
+<style>
+/* Layout: single column, one section per screen, result as a stacked diff list */
+:root{
+  --bg:#FBF8F7; --surface:#FFFFFF; --surface-2:#F4EEEF; --line:#E6DBDD;
+  --fg:#231C1F; --muted:#7C6E72;
+  --accent:#A33B5C; --accent-soft:#F7E9EE;
+  --ok:#2E7D6C; --mid:#B4762A; --gap:#A33B5C;
+  --display:"Gowun Batang",'Nanum Myeongjo',serif;
+  --body:"Noto Sans KR",system-ui,-apple-system,sans-serif;
+}
+/* 공유용 결과 카드. 캡처해서 쓰는 용도라 다크모드에서도 색을 고정한다 */
+.pairtag{display:inline-block;margin-left:8px;padding:1px 8px;border-radius:999px;
+  font-size:11.5px;font-weight:500;vertical-align:middle;white-space:nowrap;
+  background:transparent;border:1px solid var(--ok);color:var(--ok)}
+.pairtag.clash{border-color:var(--gap);color:var(--gap)}
+#cardbox{margin-top:16px}
+#rcard{background:#FBF8F7;border:1.5px solid #E6DBDD;border-radius:16px;
+  padding:32px 24px 24px;max-width:340px;margin:0 auto;color:#231C1F;
+  font-family:var(--body);text-align:center}
+#rcard p{margin:0}
+#rcard .eb{color:#A33B5C;font-weight:700;font-size:13px;letter-spacing:.04em}
+#rcard .big{font-family:var(--display);font-weight:700;font-size:82px;line-height:1;margin-top:18px}
+#rcard .big i{font-style:normal;font-size:27px;color:#A33B5C;margin-left:3px}
+#rcard .tier{font-family:var(--display);font-weight:700;font-size:21px;margin-top:14px}
+#rcard hr{border:0;border-top:1px solid #E6DBDD;margin:22px 26px}
+#rcard .rw{display:flex;justify-content:space-between;align-items:center;margin:12px 6px;font-size:14.5px}
+#rcard .rw span{color:#7C6E72;display:flex;align-items:center;gap:9px}
+#rcard .rw b{font-weight:500;color:#231C1F}
+#rcard .rw i{width:9px;height:9px;border-radius:50%;display:inline-block;flex:none}
+#rcard .tot{color:#7C6E72;font-size:12.5px;margin-top:20px}
+#rcard .by{color:#7C6E72;font-size:12.5px}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#161114; --surface:#201A1D; --surface-2:#2A2226; --line:#352B30;
+  --fg:#F2EAEC; --muted:#A4959A;
+  --accent:#E88AA3; --accent-soft:#33222A;
+  --ok:#5FBFA6; --mid:#DCA95E; --gap:#E88AA3;
+  color-scheme:dark;
+}}
+:root[data-theme="dark"]{
+  --bg:#161114; --surface:#201A1D; --surface-2:#2A2226; --line:#352B30;
+  --fg:#F2EAEC; --muted:#A4959A;
+  --accent:#E88AA3; --accent-soft:#33222A;
+  --ok:#5FBFA6; --mid:#DCA95E; --gap:#E88AA3;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font-family:var(--body);line-height:1.6;margin:0}
+.wrap{max-width:620px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:28px 56px}
+h1,h2,h3{font-family:var(--display);text-wrap:balance;margin:0}
+button{font-family:inherit;font-size:inherit;cursor:pointer}
+.btn{background:var(--accent);color:#fff;border:none;border-radius:999px;padding:13px 26px;font-weight:700;letter-spacing:.01em}
+.btn:disabled{opacity:.35;cursor:default}
+.btn.ghost{background:transparent;color:var(--muted);border:1px solid var(--line)}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.eyebrow{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-weight:700}
+
+/* intro */
+.hero h1{font-size:clamp(30px,8vw,44px);line-height:1.25;margin:14px 0 0}
+.hero p{color:var(--muted);margin:16px 0 0}
+.steps{display:grid;gap:12px;margin:28px 0;padding:0;list-style:none}
+.steps li{display:grid;grid-template-columns:26px 1fr;gap:12px;align-items:start;font-size:14px}
+.steps b{font-family:var(--display);color:var(--accent);font-size:16px}
+
+/* quiz */
+.bar{height:3px;background:var(--line);border-radius:2px;overflow:hidden;margin-bottom:22px}
+.bar i{display:block;height:100%;background:var(--accent);transition:width .3s}
+.qhead{display:flex;justify-content:space-between;align-items:baseline;gap:12px}
+.count{font-family:var(--display);font-size:15px;color:var(--muted);font-variant-numeric:tabular-nums;white-space:nowrap}
+.qtext{font-size:clamp(21px,5.4vw,27px);line-height:1.38;margin:16px 0 28px}
+.opts{display:grid;gap:9px}
+.opt{display:flex;align-items:center;min-height:58px;width:100%;text-align:left;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px 18px;font-size:15.5px;color:var(--fg);transition:border-color .15s,background .15s}
+.opt:hover{border-color:var(--accent)}
+.opt[aria-pressed="true"]{background:var(--accent-soft);border-color:var(--accent);font-weight:500}
+.nav{display:flex;justify-content:space-between;gap:10px;margin-top:30px}
+
+/* gate */
+.gate{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:24px}
+.gate h2{font-size:21px}
+.gate p{color:var(--muted);font-size:14.5px}
+
+/* result */
+.code{font-family:ui-monospace,Menlo,monospace;font-size:19px;letter-spacing:.18em;background:var(--surface-2);border:1px dashed var(--line);border-radius:12px;padding:16px;word-break:break-all;text-align:center}
+.field{width:100%;font-family:ui-monospace,Menlo,monospace;font-size:15px;letter-spacing:.1em;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:13px 14px;color:var(--fg)}
+.score{font-family:var(--display);font-size:60px;font-weight:700;line-height:1;font-variant-numeric:tabular-nums}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12.5px;color:var(--muted);margin-top:8px}
+.dot{width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:5px;vertical-align:1px}
+.grp{margin-top:34px}
+.grp>h3{font-size:17px;display:flex;align-items:center;gap:8px}
+.item{border-left:3px solid var(--line);padding:12px 0 12px 14px;margin-top:12px}
+.item .ttl{font-size:14px;font-weight:500}
+.item .ans{display:grid;grid-template-columns:auto 1fr;gap:3px 12px;font-size:13.5px;color:var(--muted);margin-top:6px}
+.item .ans b{color:var(--fg);font-weight:500;min-width:0}
+.who{white-space:nowrap}
+.item.g{border-color:var(--gap)}
+.item.m{border-color:var(--mid)}
+.item.o{border-color:var(--ok)}
+.note{font-size:12.5px;color:var(--muted);margin-top:34px;padding-top:18px;border-top:1px solid var(--line)}
+.tallybox{display:grid;gap:2px;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:6px 18px}
+.tally{display:flex;justify-content:space-between;align-items:center;padding:14px 0;font-size:15px;border-top:1px solid var(--line)}
+.tally:first-child{border-top:none}
+.tally b{font-weight:500;font-variant-numeric:tabular-nums}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <!-- INTRO -->
+  <section id="s-intro" class="hero">
+    <span class="eyebrow">연애 전 맞춰보기</span>
+    <h1>싸우고 나서<br>알게 되는 것들</h1>
+    <p>연락 빈도, 데이트 비용, 이성 친구. 사귀고 나서 부딪치는 건 대개 미리 물어보지 않은 것들입니다. 25개 문항을 각자 혼자 체크하고, 코드를 주고받아 겹쳐 봅니다.</p>
+    <ol class="steps">
+      <li><b>1</b><span>각자 혼자 답한다. 상대 눈치 볼 일 없음</span></li>
+      <li><b>2</b><span>끝나면 코드가 나온다. 상대에게 보낸다</span></li>
+      <li><b>3</b><span>받은 코드를 넣으면 어디가 다른지 나온다</span></li>
+    </ol>
+    <div class="row">
+      <button class="btn" onclick="start()">시작하기</button>
+      <button class="btn ghost" onclick="go('compare')">코드 받았어요</button>
+    </div>
+    <p class="note" style="text-align:center">성인 기준으로 만들었습니다. 혼전 관계·성병 검사 같은 성 가치관 문항이 포함되어 있습니다.<br>답은 이 브라우저에만 저장됩니다. 서버로 가지 않습니다.</p>
+    <p style="font-size:12.5px;color:var(--muted);text-align:center;margin:14px 0 0">제작자 : 엘제유</p>
+  </section>
+
+  <!-- QUIZ -->
+  <section id="s-quiz" hidden>
+    <div class="bar"><i id="prog"></i></div>
+    <div class="qhead">
+      <span class="eyebrow" id="sec-name"></span>
+      <span class="count" id="count"></span>
+    </div>
+    <h2 class="qtext" id="qtext"></h2>
+    <div class="opts" id="opts"></div>
+    <div class="nav">
+      <button class="btn ghost" id="prev" onclick="prevQ()">이전</button>
+      <span style="font-size:12.5px;color:var(--muted);align-self:center">고르면 다음으로 넘어갑니다</span>
+    </div>
+  </section>
+
+  <!-- SHARE -->
+  <section id="s-share" hidden>
+    <div class="gate">
+      <span class="eyebrow">마지막 선택</span>
+      <h2 style="margin:10px 0 0">답변을 상대에게 보여줄까요?</h2>
+      <p>공개하면 항목별로 둘이 뭐라고 답했는지 나란히 보입니다. 공개하지 않으면 일치율만 나옵니다. 둘 중 한 명이라도 공개를 원하지 않으면 일치율만 보입니다.</p>
+      <div class="row" style="margin-top:18px">
+        <button class="btn" onclick="setShare(true)">답변까지 공개</button>
+        <button class="btn ghost" onclick="setShare(false)">일치율만</button>
+        <button class="btn ghost" onclick="cur=Q.length-1;renderQ();go('quiz')">이전</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- RESULT -->
+  <section id="s-result" hidden>
+    <span class="eyebrow">내 코드</span>
+    <h2 style="font-size:24px;margin:8px 0 16px">이 코드를 상대에게 보내세요</h2>
+    <div class="code" id="mycode"></div>
+    <p id="sharenote" style="font-size:13px;color:var(--muted);margin:10px 0 0;text-align:center"></p>
+    <div class="row" style="margin-top:14px">
+      <button class="btn" id="copy" onclick="copyCode()">코드 복사</button>
+      <button class="btn ghost" onclick="go('intro')">처음으로</button>
+    </div>
+    <div style="margin-top:40px;border-top:1px solid var(--line);padding-top:28px">
+      <span class="eyebrow">상대 코드 넣기</span>
+      <h3 style="font-size:19px;margin:8px 0 14px">받은 코드를 넣으면 비교됩니다</h3>
+      <input class="field" id="partner" placeholder="LV5-••••-••••-••••-••••-••" autocomplete="off">
+      <p id="err" style="color:var(--gap);font-size:13px;margin:8px 0 0" hidden></p>
+      <button class="btn" style="margin-top:14px" onclick="compare()">비교하기</button>
+    </div>
+  </section>
+
+  <!-- COMPARE ENTRY -->
+  <section id="s-compare" hidden>
+    <span class="eyebrow">코드 비교</span>
+    <h2 style="font-size:24px;margin:8px 0 6px">두 사람의 코드를 넣으세요</h2>
+    <p style="color:var(--muted);font-size:14.5px;margin:0 0 18px">아직 체크를 안 했다면 먼저 시작하기를 눌러 코드를 만드세요.</p>
+    <input class="field" id="c1" placeholder="내 코드" autocomplete="off" style="margin-bottom:10px">
+    <input class="field" id="c2" placeholder="상대 코드" autocomplete="off">
+    <p id="err2" style="color:var(--gap);font-size:13px;margin:8px 0 0" hidden></p>
+    <div class="row" style="margin-top:14px">
+      <button class="btn" onclick="compare2()">비교하기</button>
+      <button class="btn ghost" onclick="go('intro')">처음으로</button>
+    </div>
+  </section>
+
+  <!-- DIFF -->
+  <section id="s-diff" hidden>
+    <span class="eyebrow">비교 결과</span>
+    <div class="row" style="align-items:baseline;gap:8px;margin-top:10px">
+      <span class="score" id="pct"></span>
+      <span style="font-family:var(--display);font-size:22px">% 일치</span>
+    </div>
+    <p id="tier" style="font-family:var(--display);font-size:20px;margin:12px 0 0"></p>
+    <p id="verdict" style="color:var(--muted);margin:6px 0 0;font-size:14.5px"></p>
+    <div class="legend" id="legend">
+      <span><i class="dot" style="background:var(--gap)"></i>얘기해볼 것</span>
+      <span><i class="dot" style="background:var(--mid)"></i>비슷함</span>
+      <span><i class="dot" style="background:var(--ok)"></i>일치</span>
+    </div>
+    <div id="diffout"></div>
+    <div style="margin-top:32px;border-top:1px solid var(--line);padding-top:24px">
+      <button class="btn" id="mkimg" onclick="makeImage()">결과 카드 만들기</button>
+      <p id="cardhint" class="ts" style="font-size:13px;color:var(--muted);margin:14px 0 0" hidden></p>
+      <div id="cardbox" hidden><div id="rcard"></div></div>
+      <button class="btn ghost" id="svimg" onclick="saveImage()" style="margin-top:14px" hidden>이미지 저장</button>
+      <p id="svstat" class="ts" style="font-size:12.5px;color:var(--muted);margin:10px 0 0;word-break:break-all" hidden></p>
+    </div>
+    <p class="note">재미로 만든 체크리스트입니다. 점수가 낮다고 안 맞는 사이라는 뜻은 아니고, 다른 항목이 어디인지 보는 용도입니다.</p>
+    <div class="row" style="margin-top:20px">
+      <button class="btn ghost" onclick="go('intro')">처음으로</button>
+    </div>
+  </section>
+</div>
+
+<script>
+const Q=[
+{s:0,t:"사귀기 전 스킨십, 어디까지 괜찮나요?",o:["키스","뽀뽀","팔짱, 포옹, 손잡기","모두 불가능","상대방에 따라 다름"],n:[4]},
+{s:0,t:"사귄 뒤 진도 속도",o:["일주일 안에","한 달 안에","세 달 안에","상대방이 원하는 대로","상대를 보고 판단"],n:[3,4]},
+{s:0,t:"공공장소에서의 스킨십, 어디까지 괜찮나요?",o:["키스","뽀뽀","팔짱, 포옹, 손잡기","모두 불가능","상대방에 따라 다름"],n:[4]},
+{s:1,t:"혼전 관계에 대해",o:["썸일 때도 가능","사귄 후 바로 가능","사귀고 시간을 가진 후","결혼 후에","상대에 따라서 다름"],n:[4]},
+{s:1,t:"성적인 대화를 나누는 것",o:["썸타기 전에도 가능","썸타면 가능","사귄 후에 가능","절대 불가","상대에 따라 다름"],n:[4]},
+{s:1,t:"성병 검사",o:["둘 다 수시로 받는다","둘 다 분기별로 받는다","건강검진 때 함께 받는다","필요한 상황이면 받는다","생각해본 적 없다"],n:[4]},
+{s:1,t:"동거",o:["사귀고 있으면 언제든 가능","오래 사귀었으면 가능","결혼 이야기 나오면 가능","결혼 확정되면 가능","상황에 따라"],n:[4]},
+{s:1,t:"페티시",o:["서로 맞춰간다","상대방에 맞춘다","나를 더 존중해줘야 한다","그런 건 없는 편이 좋다","상대방에 따라 다르다"],n:[4],p:[[1,2]],x:[[2,2]]},
+{s:2,t:"하루 연락 횟수",o:["수시로 주고받기","하루에 3번 이상","하루에 2번","하루에 1번","용건 있을 때만"],n:[]},
+{s:2,t:"연락하기 가장 편한 시간",o:["아무 때나","아침","점심","저녁","자기 전"],n:[0]},
+{s:2,t:"답장이 늦으면",o:["신경 쓰지 않는다","세 시간 안에만 하면 괜찮다","한 시간 안에만 하면 괜찮다","조금 서운하다","많이 서운하다"],n:[]},
+{s:2,t:"전화와 메시지",o:["둘 다 싫고 만나야 한다","통화가 편하다","메시지가 편하다","둘 다 상관없다","기분에 따라 다르다"],n:[3,4]},
+{s:3,t:"만나는 횟수",o:["매일","주 3회 이상","주 1~2회","2주에 1회","한 달에 1회"],n:[]},
+{s:3,t:"데이트 비용",o:["정확히 반반 (데이트 통장)","번갈아 가며","형편 되는 쪽이 더","무조건 남자가","그때그때 다르게"],n:[4]},
+{s:4,t:"술자리 참여",o:["자주 마셔도 괜찮다","가끔이면 괜찮다","거의 안 마셨으면 한다","술자리는 절대 안 된다","어떤 자리냐에 따라 다르다"],n:[4]},
+{s:4,t:"상대방 담배",o:["연초도 괜찮다","궐련형 전자담배까지는 괜찮다","액상형 전자담배까지는 괜찮다","냄새만 안 나면 괜찮다","절대 안 된다"],n:[3]},
+{s:5,t:"이성 친구와 단둘이 만나는 것",o:["술자리도 괜찮다","밥만 먹는 건 괜찮다","커피만 마시는 건 괜찮다","안 했으면 한다","절대 안 된다"],n:[]},
+{s:5,t:"지난 연애 이야기",o:["서로 알고 싶다","상대방만 알고 싶다","나만 말하고 싶다","굳이 알고 싶지 않다","묻지도 말하지도 않기"],n:[1,2],p:[[1,2]]},
+{s:5,t:"SNS에 연애 공개",o:["전체 공개","연애 중인 티만","주변에만","티 안 내지만 숨기진 않음","완전 비밀"],n:[]},
+{s:5,t:"휴대폰",o:["주기적으로 서로 본다","가끔 서로 본다","나만 본다","상대방만 본다","서로 안 보는 게 맞다"],n:[2,3],p:[[2,3]]},
+{s:6,t:"내 잘못으로 싸운 이후",o:["상대방이 사과하기 전에 안 푼다","잘잘못을 정확히 따져서 풀어야 한다","시간을 두고 식힌 뒤 다시 이야기한다","시간을 두고 식힌 뒤 아무 일 없던 것처럼 행동한다","내가 먼저 사과해서 푼다"],n:[]},
+{s:6,t:"상대방 잘못으로 싸운 이후",o:["상대방이 사과하기 전에 안 푼다","잘잘못을 정확히 따져서 풀어야 한다","시간을 두고 식힌 뒤 다시 이야기한다","시간을 두고 식힌 뒤 아무 일 없던 것처럼 행동한다","내가 먼저 사과해서 푼다"],n:[]},
+{s:6,t:"서운한 일이 생기면",o:["바로 말한다","생각해보고 말한다","어느 정도 쌓이면 말한다","혼자 삭이는 편이다","똑같이 해준다"],n:[4]},
+{s:7,t:"연애의 목적",o:["결혼을 전제로 연애한다","일단 만나보면서 생각한다","결혼은 나중 일이라 아직 생각 안 한다","결혼 생각은 없다","상대에 따라 다르다"],n:[4]},
+{s:7,t:"장거리 연애",o:["다른 나라도 가능하다","같은 나라면 비행기, 배를 타도 가능하다","차로 이동되면 가능하다","3시간 이내 거리면 가능하다","절대 불가"],n:[]}
+];
+const SEC=[
+ ["스킨십","어디까지, 얼마나 빨리"],
+ ["성 가치관","말하기 어려운 것들"],
+ ["연락","하루에 몇 번이 적당한가"],
+ ["만남","얼마나 자주, 비용은 어떻게"],
+ ["생활","술과 담배"],
+ ["관계 범위","어디까지가 선인가"],
+ ["갈등","부딪쳤을 때"],
+ ["미래","어디까지 보고 있나"]
+];
+const KEY='lovechk-v1';
+let ans=new Array(Q.length).fill(null), cur=0, share=true, lock=false;
+
+try{const s=localStorage.getItem(KEY); if(s){const p=JSON.parse(s); if(Array.isArray(p)&&p.length===Q.length) ans=p;}}catch(e){}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(ans))}catch(e){}}
+
+function clearInputs(){
+  ['partner','c1','c2'].forEach(id=>{const e=document.getElementById(id);if(e)e.value=''});
+  ['err','err2'].forEach(id=>{const e=document.getElementById(id);if(e)e.hidden=true});
+}
+function go(id){
+  if(id==='intro'||id==='quiz')clearInputs();
+  ['intro','quiz','share','result','compare','diff'].forEach(n=>document.getElementById('s-'+n).hidden=(n!==id));
+  window.scrollTo(0,0);
+}
+function start(){
+  ans=new Array(Q.length).fill(null);cur=0;share=true;myCode='';save();
+  renderQ();go('quiz');
+}
+
+function renderQ(){
+  const q=Q[cur];
+  document.getElementById('sec-name').textContent=SEC[q.s][0];
+  document.getElementById('count').textContent=(cur+1)+' / '+Q.length;
+  document.getElementById('qtext').textContent=q.t;
+  document.getElementById('opts').innerHTML=q.o.map((o,j)=>
+    `<button class="opt" aria-pressed="${ans[cur]===j}" onclick="pick(${j})">${o}</button>`).join('');
+  document.getElementById('prog').style.width=((cur)/Q.length*100)+'%';
+  document.getElementById('prev').style.visibility=cur===0?'hidden':'visible';
+  lock=false;
+}
+function pick(j){
+  if(lock)return; lock=true;
+  ans[cur]=j; save();
+  document.querySelectorAll('#opts .opt').forEach((b,k)=>b.setAttribute('aria-pressed',k===j));
+  setTimeout(advance,190);
+}
+function advance(){
+  if(cur>=Q.length-1){go('share');return}
+  cur++;renderQ();window.scrollTo(0,0);
+}
+function prevQ(){
+  if(cur===0)return;
+  cur--;renderQ();window.scrollTo(0,0);
+}
+function setShare(v){share=v;showResult();}
+
+/* 코드 = [답변 25개][공개여부][무작위 16비트][검사값 12비트] 를 하나의 수로 합친 뒤 섞은 것.
+   무작위 값 덕분에 답이 똑같아도 코드는 매번 달라진다. 비교할 때는 무시한다.
+   한 글자만 보고 공개/비공개를 알 수 없게 하려는 것이지, 암호는 아니다. */
+const M88=(1n<<88n)-1n, K=0x9E3779B97F4A7C15n;
+const KI=(()=>{let v=K;for(let i=0;i<7;i++)v=(v*(2n-K*v))&M88;return v})();
+const LIMIT=(5n**BigInt(Q.length))*2n*65536n*4096n;
+const CS='0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ', LEN=18;
+
+function rand16(){ // 1~65535. 0을 빼서 전부 0인 코드가 유효해지지 않게 한다
+  let r;
+  try{const a=new Uint16Array(1);crypto.getRandomValues(a);r=a[0]}
+  catch(e){r=Math.floor(Math.random()*65536)}
+  return BigInt(r%65535+1);
+}
+function encode(){
+  let v=0n;
+  for(let i=0;i<Q.length;i++)v=v*5n+BigInt(ans[i]);
+  v=v*2n+(share?1n:0n);
+  v=v*65536n+rand16();
+  v=v*4096n+(v%4093n);
+  let c=(v*K)&M88, s='';
+  for(let i=0;i<LEN;i++){s=CS[Number(c%36n)]+s;c/=36n}
+  return 'LV5'+s;
+}
+function decode(str){
+  str=(str||'').trim().toUpperCase().replace(/[\s-]/g,'');
+  if(!str.startsWith('LV5'))return null;
+  const b=str.slice(3);
+  if(b.length!==LEN)return null;
+  let c=0n;
+  for(const ch of b){const d=CS.indexOf(ch);if(d<0)return null;c=c*36n+BigInt(d)}
+  if(c>M88)return null;
+  let v=(c*KI)&M88;
+  if(v>=LIMIT)return null;
+  const cs=v%4096n; v/=4096n;
+  if(v%4093n!==cs)return null;
+  if(v%65536n===0n)return null;
+  v/=65536n;
+  const sh=(v%2n)===1n; v/=2n;
+  const out=new Array(Q.length);
+  for(let i=Q.length-1;i>=0;i--){
+    const d=Number(v%5n); v/=5n;
+    if(d>=Q[i].o.length)return null;
+    out[i]=d;
+  }
+  return {sh,a:out};
+}
+function pretty(c){return c.slice(0,3)+'-'+c.slice(3).replace(/(.{4})(?=.)/g,'$1-')}
+
+let myCode='';
+function showResult(){
+  myCode=encode();
+  document.getElementById('mycode').textContent=pretty(myCode);
+  document.getElementById('sharenote').textContent=share?'답변 공개로 만든 코드입니다':'일치율만 보이는 코드입니다';
+  go('result');
+}
+function copyCode(){
+  const t=pretty(myCode),b=document.getElementById('copy');
+  navigator.clipboard?.writeText(t).then(()=>{b.textContent='복사됨';setTimeout(()=>b.textContent='코드 복사',1600)})
+  .catch(()=>{const r=document.createRange();r.selectNodeContents(document.getElementById('mycode'));
+    const s=getSelection();s.removeAllRanges();s.addRange(r);b.textContent='길게 눌러 복사';});
+}
+
+const ERR='코드를 다시 확인해주세요. LV5로 시작합니다.';
+const SAME='본인 코드입니다. 상대의 코드를 넣어주세요.';
+const norm=s=>(s||'').trim().toUpperCase().replace(/[\s-]/g,'');
+function compare(){
+  const raw=document.getElementById('partner').value,e=document.getElementById('err');
+  const p=decode(raw);
+  if(!p){e.textContent=ERR;e.hidden=false;return}
+  if(norm(raw)===norm(myCode)){e.textContent=SAME;e.hidden=false;return}
+  e.hidden=true;renderDiff(ans,p.a,share&&p.sh);
+}
+function compare2(){
+  const r1=document.getElementById('c1').value,r2=document.getElementById('c2').value,e=document.getElementById('err2');
+  const a=decode(r1),b=decode(r2);
+  if(!a||!b){e.textContent=ERR;e.hidden=false;return}
+  if(norm(r1)===norm(r2)){e.textContent='두 칸에 같은 코드가 들어갔습니다.';e.hidden=false;return}
+  e.hidden=true;renderDiff(a.a,b.a,a.sh&&b.sh);
+}
+
+let last=null;
+function tierOf(p){
+  return p>=90?'천생연분입니다':p>=75?'잘 맞는 인연입니다':
+         p>=60?'어느 정도 맞는 인연입니다':p>=45?'맞춰갈 부분이 많습니다':'잘 안 맞는 인연입니다';
+}
+// 아티팩트는 샌드박스 안에서 돌아가서 blob:/data: 이미지 저장과 다운로드가 모두 막힌다.
+// 그래서 파일을 만들지 않고 카드를 화면에 그려서 사용자가 캡처하게 한다.
+function makeImage(){
+  if(!last)return;
+  const rows=[['얘기해볼 것',last.gap,'#A33B5C'],['비슷함',last.mid,'#B4762A'],['일치',last.ok,'#2E7D6C']];
+  document.getElementById('rcard').innerHTML=
+    '<p class="eb">연애 전 맞춰보기</p>'+
+    '<p class="big">'+last.pct+'<i>%</i></p>'+
+    '<p class="tier">'+tierOf(last.pct)+'</p>'+
+    '<hr>'+
+    rows.map(function(r){
+      return '<div class="rw"><span><i style="background:'+r[2]+'"></i>'+r[0]+'</span><b>'+r[1]+'개</b></div>';
+    }).join('')+
+    '<p class="tot">'+Q.length+'개 항목 중 '+last.total+'개 비교</p>'+
+    '<hr style="margin:18px 56px">'+
+    '<p class="by">제작자 : 엘제유</p>';
+  document.getElementById('cardbox').hidden=false;
+  const h=document.getElementById('cardhint');
+  h.textContent='이미지로 저장하거나 화면 캡처해서 공유하세요';
+  h.hidden=false;
+  document.getElementById('mkimg').hidden=true;
+  const sv=document.getElementById('svimg');
+  sv.hidden=false; sv.disabled=false; sv.textContent='이미지 저장';
+  try{document.getElementById('rcard').scrollIntoView({block:'center',behavior:'smooth'})}catch(e){}
+}
+// 결과 카드를 캔버스에 그린다. 클립보드 복사용
+function drawCard(){
+  const W=1000,H=1250,c=document.createElement('canvas');
+  c.width=W;c.height=H;
+  const x=c.getContext('2d');
+  const BG='#FBF8F7',FG='#231C1F',MUT='#7C6E72',AC='#A33B5C',LINE='#E6DBDD';
+  const D='"Gowun Batang",serif', B='"Noto Sans KR",sans-serif';
+  x.fillStyle=BG;x.fillRect(0,0,W,H);
+  x.strokeStyle=LINE;x.lineWidth=2;x.strokeRect(40,40,W-80,H-80);
+  x.textAlign='center';x.textBaseline='alphabetic';
+  x.fillStyle=AC;x.font='700 30px '+B;
+  x.fillText('연애 전 맞춰보기',W/2,160);
+  const num=String(last.pct);
+  x.font='700 250px '+D; const wn=x.measureText(num).width;
+  x.font='700 80px '+D;  const wp=x.measureText('%').width;
+  const sx=(W-(wn+18+wp))/2;
+  x.textAlign='left';
+  x.fillStyle=FG;x.font='700 250px '+D;x.fillText(num,sx,480);
+  x.fillStyle=AC;x.font='700 80px '+D;x.fillText('%',sx+wn+18,480);
+  x.textAlign='center';
+  x.fillStyle=FG;x.font='700 58px '+D;
+  x.fillText(tierOf(last.pct),W/2,580);
+  x.strokeStyle=LINE;x.beginPath();x.moveTo(220,660);x.lineTo(W-220,660);x.stroke();
+  const rows=[['얘기해볼 것',last.gap,AC],['비슷함',last.mid,'#B4762A'],['일치',last.ok,'#2E7D6C']];
+  rows.forEach(function(r,i){
+    const y=745+i*92;
+    x.fillStyle=r[2];x.beginPath();x.arc(275,y-12,10,0,7);x.fill();
+    x.textAlign='left';x.fillStyle=MUT;x.font='400 36px '+B;x.fillText(r[0],310,y);
+    x.textAlign='right';x.fillStyle=FG;x.font='500 38px '+B;x.fillText(r[1]+'개',W-275,y);
+  });
+  x.textAlign='center';
+  x.fillStyle=MUT;x.font='400 28px '+B;
+  x.fillText(Q.length+'개 항목 중 '+last.total+'개 비교',W/2,1065);
+  x.fillStyle=LINE;x.beginPath();x.moveTo(380,1110);x.lineTo(W-380,1110);x.stroke();
+  x.fillStyle=MUT;x.font='400 30px '+B;
+  x.fillText('제작자 : 엘제유',W/2,1165);
+  return c;
+}
+// 클로드 아티팩트 안에서는 일반 다운로드가 막혀 있고, 이 기능이 그 통로다.
+// 준비되는 데 시간이 걸리므로 화면이 열릴 때 미리 받아둔다
+let dlCap=null;
+try{
+  if(window.claude&&typeof claude.use==='function')
+    claude.use('downloads').then(function(d){dlCap=d}).catch(function(){});
+}catch(e){}
+
+// 저장 버튼은 저장만 한다. 공유 시트는 띄우지 않는다 (공유는 별도 버튼의 몫)
+// 터치 기기: 클로드 저장 -> 다운로드
+// PC      : 저장 위치 선택 창 -> 클로드 저장 -> 다운로드
+// 진단 줄은 실패했을 때만 보인다
+async function saveImage(){
+  if(!last)return;
+  const b=document.getElementById('svimg'), st=document.getElementById('svstat');
+  const say=function(t){ st.textContent=t||''; st.hidden=!t };
+  const reset=function(msg,hold){
+    b.disabled=false; b.textContent=msg||'이미지 저장';
+    if(msg)setTimeout(function(){b.textContent='이미지 저장'},hold||2400);
+  };
+  b.disabled=true; b.textContent='만드는 중…'; say('');
+
+  let blob=null;
+  try{
+    try{await document.fonts.ready}catch(e){}
+    const c=drawCard();
+    blob=await new Promise(function(res){ if(c.toBlob)c.toBlob(res,'image/png'); else res(null) });
+  }catch(e){}
+  if(!blob){ reset('저장 안 됨'); say('그림을 만들지 못했습니다. 화면을 캡처해 주세요.'); return }
+
+  const name='match-'+last.pct+'.png';
+  const touch=window.matchMedia?matchMedia('(pointer:coarse)').matches:false;
+
+  // 각 방법은 'saved' / 'none'(이 환경에 없음) / 'ERR:코드' 중 하나를 돌려준다
+  const viaClaude=async function(){
+    if(!dlCap)return 'none';
+    try{ const r=await dlCap.save({filename:name,data:blob}); return (r&&r.status)||'saved' }
+    catch(e){ return 'ERR:'+((e&&e.code)||'unknown') }
+  };
+  const viaPicker=async function(){
+    try{
+      if(!window.showSaveFilePicker)return 'none';
+      const h=await window.showSaveFilePicker({suggestedName:name,
+        types:[{description:'PNG 이미지',accept:{'image/png':['.png']}}]});
+      const w=await h.createWritable(); await w.write(blob); await w.close();
+      return 'saved';
+    }catch(e){ return 'ERR:'+((e&&e.name)||'unknown') }
+  };
+  const viaLink=function(){
+    try{
+      const u=URL.createObjectURL(blob);
+      const a=document.createElement('a');
+      a.href=u; a.download=name;   // 파일명에 한글을 쓰면 일부 브라우저가 이름을 버린다
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(function(){try{URL.revokeObjectURL(u)}catch(e){}},5000);
+      return 'requested';   // 브라우저에 넘긴 것까지만 확인된다. 실제 저장 여부는 알 수 없다
+    }catch(e){ return 'ERR:'+((e&&e.name)||'unknown') }
+  };
+
+  const plan = touch
+    ? [['클로드',viaClaude],['다운로드',viaLink]]
+    : [['저장창',viaPicker],['클로드',viaClaude],['다운로드',viaLink]];
+
+  const log=[];
+  for(let i=0;i<plan.length;i++){
+    const r=await plan[i][1]();
+    if(r==='none'){ log.push(plan[i][0]+':없음'); continue }
+    log.push(plan[i][0]+':'+r);
+    if(r==='saved'||r==='delivered'||r==='requested'){ reset('저장됨'); say(''); return }
+    if(r==='ERR:AbortError'||r==='ERR:declined'){ reset(); say('취소했습니다.'); return }
+    // 그 밖의 오류면 다음 방법으로 넘어간다
+  }
+  reset('저장 안 됨');
+  say('저장에 실패했습니다. 화면을 캡처해 주세요. [' + log.join(' / ') + ']');
+}
+// p = 서로 '달라야' 맞물리는 조합. 예: 한쪽이 맞춰주고 한쪽이 맞춰받기를 원하는 경우
+function pairOf(i,a,b){
+  const p=Q[i].p; if(!p)return false;
+  for(let k=0;k<p.length;k++){
+    if((a===p[k][0]&&b===p[k][1])||(a===p[k][1]&&b===p[k][0]))return true;
+  }
+  return false;
+}
+// x = 답이 같아도 오히려 부딪히는 조합. 예: 둘 다 상대가 먼저 사과하기를 기다리는 경우
+function clashOf(i,a,b){
+  const x=Q[i].x; if(!x)return false;
+  for(let k=0;k<x.length;k++){
+    if((a===x[k][0]&&b===x[k][1])||(a===x[k][1]&&b===x[k][0]))return true;
+  }
+  return false;
+}
+function grade(i,a,b){
+  if(a===null||b===null||a===undefined||b===undefined)return null;
+  if(clashOf(i,a,b))return 0;
+  if(pairOf(i,a,b))return 2;
+  if(a===b)return 2;
+  const q=Q[i];
+  if(q.n.includes(a)||q.n.includes(b))return 1;
+  return Math.abs(a-b)===1?1:0;
+}
+// 21·22번은 서로 엇갈려 만난다.
+//   A가 잘못한 상황 = A의 21번(잘못한 쪽) 대 B의 22번(당한 쪽)
+// 아래는 [잘못한 쪽 답, 당한 쪽 답, 점수]. 적지 않은 조합은 기본 규칙(번호 거리)을 따른다
+const FI=[20,21];
+const FIGHT=[
+  [4,0,2],  // 내가 먼저 사과 × 사과를 기다림        -> 딱 맞물림
+  [4,2,2],  // 내가 먼저 사과 × 식히고 다시 이야기   -> 원만
+  [4,1,1],  // 내가 먼저 사과 × 잘잘못을 따짐        -> 사과는 나오지만 부딪힘
+  [0,0,0],  // 잘못해놓고 버팀 × 사과를 기다림       -> 영영 안 풀림
+  [0,1,0],  // 잘못해놓고 버팀 × 잘잘못을 따짐       -> 크게 싸움
+  [1,0,0],  // 잘못해놓고 따짐 × 사과를 기다림       -> 크게 싸움
+  [0,4,1],  // 잘못해놓고 버팀 × 당한 쪽이 먼저 사과 -> 한쪽만 숙이지만 싸움은 끝남
+  [1,4,1],  // 잘못해놓고 따짐 × 당한 쪽이 먼저 사과 -> 한쪽만 숙이지만 싸움은 끝남
+  [2,4,2]   // 식히고 다시 이야기 × 당한 쪽이 먼저 사과 -> 양쪽 다 풀려는 자세
+];
+function gradeFight(f,v){
+  if(f===null||f===undefined||v===null||v===undefined)return null;
+  for(let k=0;k<FIGHT.length;k++)if(FIGHT[k][0]===f&&FIGHT[k][1]===v)return FIGHT[k][2];
+  if(f===v)return 2;
+  return Math.abs(f-v)===1?1:0;
+}
+function fightTag(f,v,g){
+  return g===2&&f!==v?'서로 맞물림':g===0&&f===v?'같지만 부딪힘':'';
+}
+// 비교 줄을 만든다. 싸움 문항 두 개는 맨 뒤에 엇갈린 형태로 붙인다
+function buildRows(a,b){
+  const out=[];
+  Q.forEach(function(q,i){
+    if(FI.indexOf(i)>=0)return;
+    const g=grade(i,a[i],b[i]);
+    if(g===null)return;
+    out.push({t:q.t,a:q.o[a[i]],b:q.o[b[i]],g:g,
+      tag:pairOf(i,a[i],b[i])?'서로 맞물림':clashOf(i,a[i],b[i])?'같지만 부딪힘':''});
+  });
+  const O=Q[20].o;
+  const g1=gradeFight(a[20],b[21]);   // 내가 잘못
+  if(g1!==null)out.push({t:'내가 잘못해서 싸웠을 때',a:O[a[20]],b:O[b[21]],g:g1,
+    tag:fightTag(a[20],b[21],g1)});
+  const g2=gradeFight(b[20],a[21]);   // 상대가 잘못
+  if(g2!==null)out.push({t:'상대가 잘못해서 싸웠을 때',a:O[a[21]],b:O[b[20]],g:g2,
+    tag:fightTag(b[20],a[21],g2)});
+  return out;
+}
+function renderDiff(a,b,show){
+  const rows=buildRows(a,b);
+  const pts=rows.reduce((s,r)=>s+r.g,0), pct=rows.length?Math.round(pts/(rows.length*2)*100):0;
+  document.getElementById('pct').textContent=pct;
+  const mk=document.getElementById('mkimg');
+  if(mk){mk.hidden=false;mk.disabled=false;mk.textContent='결과 카드 만들기'}
+  document.getElementById('cardbox').hidden=true;
+  document.getElementById('svimg').hidden=true;
+  document.getElementById('cardhint').hidden=true;
+  document.getElementById('tier').textContent=tierOf(pct);
+  const gaps=rows.filter(r=>r.g===0),mids=rows.filter(r=>r.g===1),oks=rows.filter(r=>r.g===2);
+  last={pct,gap:gaps.length,mid:mids.length,ok:oks.length,total:rows.length};
+  document.getElementById('verdict').textContent =
+    gaps.length===0 ? `${rows.length}개 항목 중 크게 갈리는 건 없습니다.`
+    : `${rows.length}개 항목 중 ${gaps.length}개가 많이 다릅니다.${show?' 그 부분만 먼저 얘기해보세요.':''}`;
+  document.getElementById('legend').hidden=false;
+  const skipnote=rows.length<Q.length?`<p class="note">한쪽이 건너뛴 ${Q.length-rows.length}개 항목은 비교에서 제외했습니다.</p>`:'';
+  const tally=[['얘기해볼 것',gaps.length,'gap'],['비슷함',mids.length,'mid'],['일치',oks.length,'ok']]
+    .map(([l,n,c])=>`<div class="tally"><span><i class="dot" style="background:var(--${c})"></i>${l}</span><b>${n}개</b></div>`).join('');
+  if(!show){
+    document.getElementById('diffout').innerHTML=
+      `<div class="grp"><div class="tallybox">${tally}</div>`+
+      `<p class="note" style="margin-top:20px;padding-top:0;border:none">둘 중 한 명이 일치율만 보기를 선택해서 항목별 답변은 가려져 있습니다. 양쪽 다 공개를 고르면 어떤 항목이 어떻게 갈렸는지 나란히 보입니다.</p></div>`+skipnote;
+    go('diff');return;
+  }
+  const blk=(title,list,cls)=>list.length?
+    `<div class="grp"><h3><i class="dot" style="background:var(--${cls==='g'?'gap':cls==='m'?'mid':'ok'})"></i>${title} <span style="color:var(--muted);font-weight:400;font-size:14px">${list.length}</span></h3>`+
+    list.map(r=>`<div class="item ${cls}"><div class="ttl">${r.t}${r.tag?`<span class="pairtag${r.tag==='같지만 부딪힘'?' clash':''}">${r.tag}</span>`:''}</div><div class="ans"><span class="who">나</span><b>${r.a}</b><span class="who">상대</span><b>${r.b}</b></div></div>`).join('')+`</div>`:'';
+  document.getElementById('diffout').innerHTML=
+    blk('얘기해볼 것',gaps,'g')+blk('비슷함',mids,'m')+blk('일치',oks,'o')+skipnote;
+  go('diff');
+}
+</script>
+</body>
+</html>
