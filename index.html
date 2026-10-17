@@ -3,12 +3,22 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="description" content="두 사람이 각자 25개 문항에 답하고 코드를 주고받아, 어디가 얼마나 다른지 비교해보는 연애 전 체크리스트입니다.">
+<meta name="description" content="25개 문항에 각자 답하고 코드를 주고받으면, 어디가 얼마나 다른지 보입니다.">
 <meta name="theme-color" content="#FBF8F7">
 <meta property="og:type" content="website">
-<meta property="og:title" content="연애 전 맞춰보기">
-<meta property="og:description" content="25개 문항에 답하고 코드를 교환해 서로 어디가 다른지 비교해보세요.">
+<meta property="og:site_name" content="연애 전 맞춰보기">
+<meta property="og:title" content="우리 얼마나 맞을까?">
+<meta property="og:description" content="25개 문항에 각자 답하고 코드를 주고받으면, 어디가 얼마나 다른지 보입니다.">
+<meta property="og:url" content="https://darkburnin-lju.github.io/love-check/">
+<meta property="og:image" content="https://darkburnin-lju.github.io/love-check/og.png">
+<meta property="og:image:type" content="image/png">
+<meta property="og:image:width" content="800">
+<meta property="og:image:height" content="400">
 <meta property="og:locale" content="ko_KR">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="우리 얼마나 맞을까?">
+<meta name="twitter:description" content="25개 문항에 각자 답하고 코드를 주고받으면, 어디가 얼마나 다른지 보입니다.">
+<meta name="twitter:image" content="https://darkburnin-lju.github.io/love-check/og.png">
 <title>연애 전 맞춰보기</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&family=Noto+Sans+KR:wght@400;500;700&display=swap">
 <style>
@@ -132,6 +142,9 @@ button{font-family:inherit;font-size:inherit;cursor:pointer}
       <button class="btn" onclick="start()">시작하기</button>
       <button class="btn ghost" onclick="go('compare')">코드 받았어요</button>
     </div>
+    <div class="row" style="margin-top:10px">
+      <button class="btn ghost" id="shsite" onclick="shareSite()">친구에게 보내기</button>
+    </div>
     <p class="note" style="text-align:center">성인 기준으로 만들었습니다. 혼전 관계·성병 검사 같은 성 가치관 문항이 포함되어 있습니다.<br>답은 이 브라우저에만 저장됩니다. 서버로 가지 않습니다.</p>
     <p style="font-size:12.5px;color:var(--muted);text-align:center;margin:14px 0 0">제작자 : 엘제유</p>
   </section>
@@ -173,6 +186,9 @@ button{font-family:inherit;font-size:inherit;cursor:pointer}
     <p id="sharenote" style="font-size:13px;color:var(--muted);margin:10px 0 0;text-align:center"></p>
     <div class="row" style="margin-top:14px">
       <button class="btn" id="copy" onclick="copyCode()">코드 복사</button>
+      <button class="btn ghost" id="shcode" onclick="shareCode()">링크와 함께 보내기</button>
+    </div>
+    <div class="row" style="margin-top:10px">
       <button class="btn ghost" onclick="go('intro')">처음으로</button>
     </div>
     <div style="margin-top:40px;border-top:1px solid var(--line);padding-top:28px">
@@ -217,7 +233,10 @@ button{font-family:inherit;font-size:inherit;cursor:pointer}
       <button class="btn" id="mkimg" onclick="makeImage()">결과 카드 만들기</button>
       <p id="cardhint" class="ts" style="font-size:13px;color:var(--muted);margin:14px 0 0" hidden></p>
       <div id="cardbox" hidden><div id="rcard"></div></div>
-      <button class="btn ghost" id="svimg" onclick="saveImage()" style="margin-top:14px" hidden>이미지 저장</button>
+      <div class="row" style="margin-top:14px;justify-content:center">
+        <button class="btn ghost" id="svimg" onclick="saveImage()" hidden>이미지 저장</button>
+        <button class="btn ghost" id="shres" onclick="shareResult()" hidden>결과 공유</button>
+      </div>
       <p id="svstat" class="ts" style="font-size:12.5px;color:var(--muted);margin:10px 0 0;word-break:break-all" hidden></p>
     </div>
     <p class="note">재미로 만든 체크리스트입니다. 점수가 낮다고 안 맞는 사이라는 뜻은 아니고, 다른 항목이 어디인지 보는 용도입니다.</p>
@@ -421,6 +440,8 @@ function makeImage(){
   document.getElementById('mkimg').hidden=true;
   const sv=document.getElementById('svimg');
   sv.hidden=false; sv.disabled=false; sv.textContent='이미지 저장';
+  const sh=document.getElementById('shres');
+  sh.hidden=false; sh.disabled=false; sh.textContent='결과 공유';
   try{document.getElementById('rcard').scrollIntoView({block:'center',behavior:'smooth'})}catch(e){}
 }
 // 결과 카드를 캔버스에 그린다. 클립보드 복사용
@@ -461,6 +482,54 @@ function drawCard(){
   x.fillText('제작자 : 엘제유',W/2,1165);
   return c;
 }
+// 공유에 함께 보낼 사이트 주소. 주소를 옮기면 이 한 줄만 고치면 된다
+const SITE='https://darkburnin-lju.github.io/love-check/';
+
+function flash(b,msg){
+  if(!b.dataset.label)b.dataset.label=b.textContent;
+  b.textContent=msg;
+  setTimeout(function(){b.textContent=b.dataset.label},2000);
+}
+// 글을 공유한다. 공유 기능이 없는 환경이면 복사로 대신한다
+async function shareText(text,b){
+  try{
+    if(navigator.share){ await navigator.share({text:text}); return }
+  }catch(e){ if(e&&e.name==='AbortError')return }
+  try{ await navigator.clipboard.writeText(text); flash(b,'복사됨') }
+  catch(e){ flash(b,'복사 안 됨') }
+}
+// 시작 화면: 링크만 보낸다. 설명은 미리보기 카드가 대신한다
+function shareSite(){
+  shareText(SITE,document.getElementById('shsite'));
+}
+// 상대에게 링크와 내 코드를 한 번에 보낸다
+function shareCode(){
+  if(!myCode)return;
+  shareText('연애 전 맞춰보기\n25개 문항에 답하고 내 코드를 넣어줘\n\n내 코드 : '+pretty(myCode)+'\n'+SITE,
+            document.getElementById('shcode'));
+}
+// 결과 카드 이미지와 함께 공유한다. 이미지가 안 되면 글만 보낸다
+async function shareResult(){
+  if(!last)return;
+  const b=document.getElementById('shres');
+  const text='연애 전 맞춰보기\n'+last.pct+'% · '+tierOf(last.pct)+'\n'+SITE;
+  let blob=null;
+  try{
+    try{await document.fonts.ready}catch(e){}
+    const c=drawCard();
+    blob=await new Promise(function(res){ if(c.toBlob)c.toBlob(res,'image/png'); else res(null) });
+  }catch(e){}
+  if(blob){
+    try{
+      const f=new File([blob],'match-'+last.pct+'.png',{type:'image/png'});
+      if(navigator.canShare&&navigator.canShare({files:[f]})){
+        await navigator.share({files:[f],text:text}); return;
+      }
+    }catch(e){ if(e&&e.name==='AbortError')return }
+  }
+  shareText(text,b);
+}
+
 // 클로드 아티팩트 안에서는 일반 다운로드가 막혀 있고, 이 기능이 그 통로다.
 // 준비되는 데 시간이 걸리므로 화면이 열릴 때 미리 받아둔다
 let dlCap=null;
@@ -612,6 +681,7 @@ function renderDiff(a,b,show){
   if(mk){mk.hidden=false;mk.disabled=false;mk.textContent='결과 카드 만들기'}
   document.getElementById('cardbox').hidden=true;
   document.getElementById('svimg').hidden=true;
+  document.getElementById('shres').hidden=true;
   document.getElementById('cardhint').hidden=true;
   document.getElementById('tier').textContent=tierOf(pct);
   const gaps=rows.filter(r=>r.g===0),mids=rows.filter(r=>r.g===1),oks=rows.filter(r=>r.g===2);
