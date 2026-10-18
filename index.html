@@ -240,7 +240,9 @@ button{font-family:inherit;font-size:inherit;cursor:pointer}
         <button class="btn ghost" id="svimg" onclick="saveImage()" hidden>이미지 저장</button>
         <button class="btn ghost" id="cpres" onclick="copyResult()" hidden>결과 복사</button>
       </div>
-      <p id="svstat" class="ts" style="font-size:12.5px;color:var(--muted);margin:12px 0 0;text-align:center;word-break:break-all" hidden></p>
+      <p id="svstat" class="ts" style="font-size:12.5px;color:var(--muted);margin:12px 0 0;text-align:center;line-height:1.6;white-space:pre-line" hidden></p>
+      <img id="fbimg" alt="결과 카드" hidden
+           style="display:block;width:100%;max-width:330px;margin:14px auto 0;border:1px solid var(--line);border-radius:14px">
     </div>
     <p class="note">재미로 만든 체크리스트입니다. 점수가 낮다고 안 맞는 사이라는 뜻은 아니고, 다른 항목이 어디인지 보는 용도입니다.</p>
     <div class="row" style="margin-top:20px">
@@ -580,6 +582,21 @@ function copyResult(){
 // 성공 여부를 알 방법이 없으므로 안내만 덧붙인다
 const IOS=/iPad|iPhone|iPod/.test(navigator.userAgent)||
           (navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
+// 카톡·인스타 같은 앱 안의 브라우저는 다운로드를 막는다.
+// 그럴 때는 그림을 화면에 띄워서 길게 눌러 저장하게 한다.
+// 여기 안 적힌 앱도 있어서, 저장이 다 실패했을 때도 같은 길로 빠진다
+const INAPP=/KAKAOTALK|Instagram|FBAN|FBAV|FB_IAB|Line\/|NAVER|DaumApps|Threads|everytimeApp/i
+            .test(navigator.userAgent);
+function showImage(c){
+  try{
+    const im=document.getElementById('fbimg');
+    im.src=c.toDataURL('image/png');   // blob 주소는 앱 안에서 길게 눌러 저장이 안 된다
+    im.hidden=false;
+    im.scrollIntoView({block:'nearest',behavior:'smooth'});
+    return true;
+  }catch(e){ return false }
+}
+
 let dlCap=null;
 try{
   if(window.claude&&typeof claude.use==='function')
@@ -600,13 +617,22 @@ async function saveImage(){
   };
   b.disabled=true; b.textContent='만드는 중…'; say('');
 
-  let blob=null;
+  document.getElementById('fbimg').hidden=true;
+
+  let blob=null, card=null;
   try{
     try{await document.fonts.ready}catch(e){}
-    const c=drawCard();
-    blob=await new Promise(function(res){ if(c.toBlob)c.toBlob(res,'image/png'); else res(null) });
+    card=drawCard();
+    blob=await new Promise(function(res){ if(card.toBlob)card.toBlob(res,'image/png'); else res(null) });
   }catch(e){}
   if(!blob){ reset('저장 안 됨'); say('그림을 만들지 못했습니다. 화면을 캡처해 주세요.'); return }
+
+  // 앱 안의 브라우저면 다운로드를 시도해봐야 오류만 뜨므로 바로 그림을 띄운다
+  if(INAPP && showImage(card)){
+    reset();
+    say('카톡·인스타 안에서는 바로 저장이 안 됩니다.\n아래 그림을 길게 눌러 저장해 주세요.');
+    return;
+  }
 
   const name='match-'+last.pct+'.png';
   const touch=window.matchMedia?matchMedia('(pointer:coarse)').matches:false;
@@ -656,6 +682,11 @@ async function saveImage(){
     if(r==='saved'||r==='delivered'){ reset('저장됨'); say(''); return }
     if(r==='ERR:AbortError'||r==='ERR:declined'){ reset(); say(''); return }   // 취소는 오류가 아니다
     // 그 밖의 오류면 다음 방법으로 넘어간다
+  }
+  if(showImage(card)){
+    reset();
+    say('바로 저장이 안 됩니다.\n아래 그림을 길게 눌러 저장해 주세요.');
+    return;
   }
   reset('저장 안 됨');
   say('저장에 실패했습니다. 화면을 캡처해 주세요. [' + log.join(' / ') + ']');
@@ -738,6 +769,7 @@ function renderDiff(a,b,show){
   document.getElementById('svimg').hidden=true;
   document.getElementById('cpres').hidden=true;
   const st=document.getElementById('svstat'); st.hidden=true; st.textContent='';
+  document.getElementById('fbimg').hidden=true;
   document.getElementById('cardhint').hidden=true;
   document.getElementById('tier').textContent=tierOf(pct);
   const gaps=rows.filter(r=>r.g===0),mids=rows.filter(r=>r.g===1),oks=rows.filter(r=>r.g===2);
