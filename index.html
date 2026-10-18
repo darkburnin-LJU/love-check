@@ -124,6 +124,29 @@ button{font-family:inherit;font-size:inherit;cursor:pointer}
 .tally{display:flex;justify-content:space-between;align-items:center;padding:14px 0;font-size:15px;border-top:1px solid var(--line)}
 .tally:first-child{border-top:none}
 .tally b{font-weight:500;font-variant-numeric:tabular-nums}
+/* 혼자 풀었을 때 나오는 유형 카드 */
+#mytype{background:var(--surface);border:1.5px solid var(--line);border-radius:18px;
+  padding:30px 22px 26px;text-align:center;margin-bottom:34px}
+#mytype .tcode{font-family:var(--display);font-weight:700;
+  font-size:clamp(40px,12vw,58px);line-height:1;letter-spacing:.06em;color:var(--accent)}
+#mytype .tname{font-family:var(--display);font-weight:700;
+  font-size:clamp(20px,5.4vw,27px);line-height:1.3;margin:14px 0 0}
+#mytype .tline{color:var(--muted);font-size:14.5px;margin:11px 0 0}
+#mytype hr{border:0;border-top:1px solid var(--line);margin:24px 2px}
+#mytype .tdesc{text-align:left;font-size:14.5px;margin:0}
+#mytype .tdesc p{margin:0 0 9px}
+#mytype .tdesc p:last-child{margin-bottom:0}
+.taxes{display:grid;gap:15px;margin-top:24px;text-align:left}
+.tax{font-size:12.5px;color:var(--muted)}
+.tax .lb{display:flex;justify-content:space-between;margin-bottom:6px}
+.tax .lb b{font-weight:700;color:var(--fg);font-size:13px}
+.tax .lb em{font-style:normal;font-weight:700;font-size:13px;color:var(--accent);
+  margin-left:5px;font-variant-numeric:tabular-nums}
+.ttrack{position:relative;height:6px;background:var(--surface-2);
+  border:1px solid var(--line);border-radius:999px}
+.ttrack i{position:absolute;top:-4px;width:12px;height:12px;border-radius:50%;
+  background:var(--accent);transform:translateX(-50%);transition:left .4s}
+.ttrack u{position:absolute;top:0;bottom:0;left:50%;width:1px;background:var(--line)}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
 </head>
@@ -183,6 +206,15 @@ button{font-family:inherit;font-size:inherit;cursor:pointer}
 
   <!-- RESULT -->
   <section id="s-result" hidden>
+    <div id="mytype">
+      <p class="eyebrow">내 연애 유형</p>
+      <p class="tcode" id="tcode"></p>
+      <p class="tname" id="tname"></p>
+      <p class="tline" id="tline"></p>
+      <hr>
+      <div class="tdesc" id="tdesc"></div>
+      <div class="taxes" id="taxes"></div>
+    </div>
     <span class="eyebrow">내 코드</span>
     <h2 style="font-size:24px;margin:8px 0 16px">이 코드를 상대에게 보내세요</h2>
     <div class="code" id="mycode"></div>
@@ -266,7 +298,7 @@ const Q=[
 {s:2,t:"답장이 늦으면",o:["신경 쓰지 않는다","세 시간 안에만 하면 괜찮다","한 시간 안에만 하면 괜찮다","조금 서운하다","많이 서운하다"],n:[]},
 {s:2,t:"전화와 메시지",o:["둘 다 싫고 만나야 한다","통화가 편하다","메시지가 편하다","둘 다 상관없다","기분에 따라 다르다"],n:[3,4]},
 {s:3,t:"만나는 횟수",o:["매일","주 3회 이상","주 1~2회","2주에 1회","한 달에 1회"],n:[]},
-{s:3,t:"데이트 비용",o:["정확히 반반 (데이트 통장)","번갈아 가며","형편 되는 쪽이 더","무조건 남자가","그때그때 다르게"],n:[4]},
+{s:3,t:"데이트 비용",o:["정확히 반반 (데이트 통장)","번갈아 가며","형편 되는 쪽이 더","무조건 상대방이","무조건 내가"],n:[2],p:[[3,4]],x:[[3,3]]},
 {s:4,t:"술자리 참여",o:["자주 마셔도 괜찮다","가끔이면 괜찮다","거의 안 마셨으면 한다","술자리는 절대 안 된다","어떤 자리냐에 따라 다르다"],n:[4]},
 {s:4,t:"상대방 담배",o:["연초도 괜찮다","궐련형 전자담배까지는 괜찮다","액상형 전자담배까지는 괜찮다","냄새만 안 나면 괜찮다","절대 안 된다"],n:[3]},
 {s:5,t:"이성 친구와 단둘이 만나는 것",o:["술자리도 괜찮다","밥만 먹는 건 괜찮다","커피만 마시는 건 괜찮다","안 했으면 한다","절대 안 된다"],n:[]},
@@ -382,7 +414,7 @@ function setShare(v){share=v;showResult();}
 // 문항이나 선택지를 바꾸면 VER을 올린다. 옛 코드는 자동으로 거부된다.
 // 버전을 '라벨'이 아니라 '섞는 수'에 넣는 것이 핵심이다.
 // 앞 글자만 손으로 고쳐 쓴 옛 코드도 여기서 걸러진다
-const VER=5;
+const VER=6;   // 문항이나 선택지를 고치면 이 번호를 올린다. 옛 코드가 막힌다
 const M88=(1n<<100n)-1n;                                           // 섞는 공간
 const K=(0x9E3779B97F4A7C15n+BigInt(VER)*0x2545F4914F6CDD1Dn)|1n;   // 홀수여야 되돌릴 수 있다
 const KI=(()=>{let v=K;for(let i=0;i<8;i++)v=(v*(2n-K*v))&M88;return v})();
@@ -431,11 +463,158 @@ function decode(str){
 }
 function pretty(c){return c.replace(/(.{4})(?=.)/g,'$1-')}
 
+/* ── 혼자 풀어도 나오는 유형 ──────────────────────
+   문항 배열(Q)은 건드리지 않고, 축과 점수를 옆에 따로 둔다.
+     속도  Dash(빨리)     ↔ Slow(천천히)     D / S
+     거리  Attach(붙어서)  ↔ Open(각자)       A / O
+     선    Rule(깐깐)     ↔ Chill(그러려니)  R / C
+     이기  Me(내 쪽)      ↔ You(네 쪽)       M / Y
+   21·22번만 예외로, 둘을 비교해서 이기 축에 한 번 더한다
+   ───────────────────────────────────────────── */
+const AX=[
+ ['spd',[ 2, 1,-1,-2, 0]],  //  1 사귀기 전 스킨십
+ ['spd',[ 2, 1,-2, 0, 0]],  //  2 진도 속도
+ ['spd',[ 2, 1,-1,-2, 0]],  //  3 공공장소 스킨십
+ ['spd',[ 2, 1,-1,-2, 0]],  //  4 혼전 관계
+ ['spd',[ 2, 1,-1,-2, 0]],  //  5 성적인 대화
+ ['lin',[ 2, 1, 0,-1,-2]],  //  6 성병 검사
+ ['spd',[ 2, 1,-1,-2, 0]],  //  7 동거
+ ['ego',[ 0,-2, 2, 0,-1]],  //  8 페티시
+ ['dis',[ 2, 1, 0,-1,-2]],  //  9 연락 횟수
+ ['dis',[ 2, 0, 0, 0, 1]],  // 10 연락 시간 — 변별이 약한 문항
+ ['dis',[-2,-1, 1, 1, 2]],  // 11 답장 늦으면
+ ['dis',[ 2, 1,-1, 0, 0]],  // 12 전화와 메시지
+ ['dis',[ 2, 1, 0,-1,-2]],  // 13 만나는 횟수
+ ['ego',[ 0, 0, 0, 2,-2]],  // 14 데이트 비용
+ ['lin',[-2,-1, 1, 2, 0]],  // 15 술자리
+ ['lin',[-2,-1, 0, 1, 2]],  // 16 담배
+ ['lin',[-2,-1, 0, 1, 2]],  // 17 이성친구
+ ['ego',[ 0, 2, 1, 0,-1]],  // 18 지난 연애
+ ['lin',[ 2, 1, 0,-1,-2]],  // 19 SNS 공개
+ ['ego',[ 0, 0, 2,-2, 0]],  // 20 휴대폰
+ ['',   []],                // 21 내 잘못   → 22번과 비교해서 쓴다
+ ['',   []],                // 22 상대 잘못
+ ['ego',[ 1, 0, 0,-2, 2]],  // 23 서운한 일
+ ['dis',[ 2, 0,-1,-2, 0]],  // 24 연애의 목적
+ ['dis',[-2,-1, 0, 1, 2]]   // 25 장거리
+];
+// 21·22번이 얼마나 따지는 답인지. 남 잘못엔 따지고 내 잘못은 덮으면 '내 쪽'이다
+const STRICT=[2,2,1,0,0];
+
+const TAX=[
+ {k:'spd',hi:'빨리',   lo:'천천히',   H:'D',L:'S',max:12},
+ {k:'dis',hi:'붙어서', lo:'각자',     H:'A',L:'O',max:14},
+ {k:'lin',hi:'깐깐하게',lo:'그러려니', H:'R',L:'C',max:10},
+ {k:'ego',hi:'내 쪽',  lo:'네 쪽',    H:'M',L:'Y',max:12}   // 문항 10 + 21·22 교차 2
+];
+
+const TY={
+ DARM:{n:'사랑이라 쓰고 통제라 읽는',l:'좋아하니까 알고 싶은 거야',d:[
+  '빨리 가까워지고 매일 붙어 있고 싶고, 상대 행동에 기준이 분명합니다.',
+  '그 기준을 상대가 맞춰주길 바라는 쪽이라, 상대는 숨 쉴 틈을 찾습니다.']},
+ DARY:{n:'다 맞춰주다 지치는',l:'내가 참으면 되지',d:[
+  '빠르게 가까워지고 자주 보고, 기준도 있는데 결국 자기가 접습니다.',
+  '오래 버티다 한 번에 터져서, 상대는 왜 그러는지 모릅니다.']},
+ DACM:{n:'사랑받는 게 당연한',l:'그냥 해주면 안 돼?',d:[
+  '빨리 가고 자주 보고 간섭은 안 하는데, 챙김은 받는 쪽입니다.',
+  '본인은 편한 연애라 생각하고, 상대는 혼자 애쓰는 기분입니다.']},
+ DACY:{n:'일단 다 좋다고 하는',l:'네가 좋으면 나도 좋아',d:[
+  '빠르고 다정하고 따지지 않고 웬만하면 맞춰줍니다.',
+  '초반이 제일 즐거운 유형인데, 본인이 뭘 원하는지는 끝까지 안 말합니다.']},
+ DORM:{n:'가까워도 내 구역은 내 구역',l:'그건 내 영역이야',d:[
+  '스킨십이나 속도에는 거리낌이 없는데, 연락과 사생활은 각자 두길 원합니다.',
+  '기준은 깐깐해서 상대한테만 적용되는 것처럼 보일 때가 있습니다.']},
+ DORY:{n:'선은 긋되 밀어내진 않는',l:'내 방식이 있고, 네 사정도 있지',d:[
+  '빨리 가까워지되 거리는 두고, 기준이 있어도 상대 사정을 봅니다.',
+  '적당한 거리를 잘 지키는 편이라 오래 가는 쪽입니다.']},
+ DOCM:{n:'쿨한 척하면서 받기만',l:'구속 안 해. 근데 서운하긴 해',d:[
+  '빨리 가고, 매달리지 않고, 아무것도 안 따진다고 말합니다.',
+  '그런데 챙김은 받고 싶어 해서, 상대가 기준을 종잡지 못합니다.']},
+ DOCY:{n:'진짜 쿨한 건 이쪽',l:'편한 대로 해',d:[
+  '빨리 가까워지지만 매달리지 않고, 따지지도 않고, 맞춰주기까지 합니다.',
+  '같이 있기 제일 편한데, 상대는 자기가 중요한 사람인지 가끔 헷갈립니다.']},
+ SARM:{n:'오래 걸린 만큼 요구하는',l:'여기까지 왔으면 이 정도는',d:[
+  '시작은 신중한데, 한번 들어오면 기준이 많아집니다.',
+  '오래 재고 들어온 만큼 상대도 맞춰주길 바랍니다.']},
+ SARY:{n:'결혼 전제 아니면 시작 안 하는',l:'천천히, 대신 제대로',d:[
+  '속도는 느리고 연락은 꾸준하고 기준은 분명한데, 양보도 합니다.',
+  '가볍게 만나는 걸 제일 싫어합니다. 시작이 늦고 한번 가면 깁니다.']},
+ SACM:{n:'천천히 기대오는',l:'급하진 않은데, 네가 있어야 해',d:[
+  '빨리 갈 생각은 없는데 자주 보고 싶고, 챙김은 받는 쪽입니다.',
+  '부담을 안 주는 것 같지만 의존은 깊습니다.']},
+ SACY:{n:'연애인데 우정 같은',l:'싸울 일이 없다',d:[
+  '천천히 가고, 자주 보고, 아무것도 안 따지고, 웬만하면 맞춥니다.',
+  '편한 게 제일인 유형이라 다툼이 거의 없고, 설렘도 오래는 못 갑니다.']},
+ SORM:{n:'문턱이 제일 높은',l:'아무나 들이지 않는다',d:[
+  '속도도 느리고 거리도 두고 기준도 까다롭습니다.',
+  '넘어온 사람한테는 깊은데, 넘어오기 전까지가 깁니다.']},
+ SORY:{n:'조심스럽게 재다가 늦는',l:'괜히 말했다가 부담될까 봐',d:[
+  '천천히 가고 거리도 두고 기준도 있는데, 상대 눈치를 먼저 봅니다.',
+  '말을 아끼다 타이밍을 놓치는 쪽입니다.']},
+ SOCM:{n:'있으면 좋고 없어도 그만',l:'굳이?',d:[
+  '빨리 갈 생각도, 매일 볼 생각도, 뭘 따질 생각도 없습니다.',
+  '그런데 챙겨주면 받습니다. 상대가 혼자 끌고 가는 모양이 됩니다.']},
+ SOCY:{n:'싫다고 말한 적 없는',l:'나는 아무거나 괜찮아',d:[
+  '느리고, 거리 두고, 안 따지고, 다 맞춰줍니다.',
+  '싫은 게 없는 게 아니라 말을 안 하는 쪽이라, 상대가 알 방법이 없습니다.']}
+};
+
+function typeOf(a){
+  const s={spd:0,dis:0,lin:0,ego:0};
+  for(let i=0;i<Q.length;i++){
+    const v=a[i]; if(v===null||v===undefined)continue;
+    const k=AX[i][0]; if(!k)continue;
+    s[k]+=AX[i][1][v]||0;
+  }
+  const mine=a[20], theirs=a[21];   // 21·22번 교차
+  if(mine!==null&&mine!==undefined&&theirs!==null&&theirs!==undefined)
+    s.ego+=STRICT[theirs]-STRICT[mine];
+  let code='';
+  TAX.forEach(function(t){ code+=(s[t.k]>=0?t.H:t.L) });
+  return {code:code,s:s};
+}
+
+function drawType(a){
+  const r=typeOf(a), t=TY[r.code];
+  if(!t)return;
+  document.getElementById('tcode').textContent=r.code;
+  document.getElementById('tname').textContent=t.n;
+  document.getElementById('tline').textContent='"'+t.l+'"';
+  const d=document.getElementById('tdesc'); d.textContent='';
+  t.d.forEach(function(line){
+    const p=document.createElement('p'); p.textContent=line; d.appendChild(p);
+  });
+  const box=document.getElementById('taxes'); box.textContent='';
+  TAX.forEach(function(cfg){
+    const v=r.s[cfg.k];
+    const pos=Math.round((1-(Math.max(-cfg.max,Math.min(cfg.max,v))+cfg.max)/(cfg.max*2))*100);
+    const pw=Math.round(50+Math.min(Math.abs(v),cfg.max)/cfg.max*50);
+    const row=document.createElement('div'); row.className='tax';
+    const lb=document.createElement('div'); lb.className='lb';
+    function side(text,win){
+      const sp=document.createElement('span');
+      if(win){
+        const b=document.createElement('b'); b.textContent=text; sp.appendChild(b);
+        const e=document.createElement('em'); e.textContent=pw+'%'; sp.appendChild(e);
+      } else sp.textContent=text;
+      return sp;
+    }
+    lb.appendChild(side(cfg.hi, v>=0));
+    lb.appendChild(side(cfg.lo, v<0));
+    const tr=document.createElement('div'); tr.className='ttrack';
+    tr.appendChild(document.createElement('u'));
+    const dot=document.createElement('i'); dot.style.left=pos+'%'; tr.appendChild(dot);
+    row.appendChild(lb); row.appendChild(tr);
+    box.appendChild(row);
+  });
+}
+
 let myCode='';
 function showResult(){
   myCode=encode();
   document.getElementById('mycode').textContent=pretty(myCode);
   document.getElementById('sharenote').textContent=share?'답변 공개로 만든 코드입니다':'일치율만 보이는 코드입니다';
+  drawType(ans);
   go('result');
 }
 
