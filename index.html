@@ -215,6 +215,12 @@ button{font-family:inherit;font-size:inherit;cursor:pointer}
       <div class="tdesc" id="tdesc"></div>
       <div class="taxes" id="taxes"></div>
     </div>
+    <div class="row" style="margin:-18px 0 32px;justify-content:center">
+      <button class="btn ghost" id="svtype" onclick="saveImage('type')">이미지 저장</button>
+    </div>
+    <p id="svtstat" style="font-size:12.5px;color:var(--muted);margin:-24px 0 30px;text-align:center;line-height:1.6;white-space:pre-line" hidden></p>
+    <img id="fbimg2" alt="유형 카드" hidden
+         style="display:block;width:100%;max-width:330px;margin:-20px auto 32px;border:1px solid var(--line);border-radius:14px">
     <span class="eyebrow">내 코드</span>
     <h2 style="font-size:24px;margin:8px 0 16px">이 코드를 상대에게 보내세요</h2>
     <div class="code" id="mycode"></div>
@@ -574,9 +580,11 @@ function typeOf(a){
   return {code:code,s:s};
 }
 
+let myType=null;
 function drawType(a){
   const r=typeOf(a), t=TY[r.code];
   if(!t)return;
+  myType=r;
   document.getElementById('tcode').textContent=r.code;
   document.getElementById('tname').textContent=t.n;
   document.getElementById('tline').textContent='"'+t.l+'"';
@@ -599,8 +607,8 @@ function drawType(a){
       } else sp.textContent=text;
       return sp;
     }
-    lb.appendChild(side(cfg.hi, v>=0));
-    lb.appendChild(side(cfg.lo, v<0));
+    lb.appendChild(side(cfg.hi+' ('+cfg.H+')', v>=0));
+    lb.appendChild(side(cfg.lo+' ('+cfg.L+')', v<0));
     const tr=document.createElement('div'); tr.className='ttrack';
     tr.appendChild(document.createElement('u'));
     const dot=document.createElement('i'); dot.style.left=pos+'%'; tr.appendChild(dot);
@@ -615,6 +623,9 @@ function showResult(){
   document.getElementById('mycode').textContent=pretty(myCode);
   document.getElementById('sharenote').textContent=share?'답변 공개로 만든 코드입니다':'일치율만 보이는 코드입니다';
   drawType(ans);
+  const b=document.getElementById('svtype'); b.disabled=false; b.textContent='이미지 저장';
+  const st=document.getElementById('svtstat'); st.hidden=true; st.textContent='';
+  document.getElementById('fbimg2').hidden=true;
   go('result');
 }
 
@@ -709,6 +720,86 @@ function drawCard(){
   x.fillText('제작자 : 엘제유',W/2,1192);
   return c;
 }
+// 혼자 푼 사람이 올릴 유형 카드. 다크모드에서도 색을 고정한다
+function fitT(x,text,max,size,weight,font){
+  let s=size; x.font=weight+' '+s+'px '+font;
+  while(x.measureText(text).width>max && s>18){ s-=2; x.font=weight+' '+s+'px '+font }
+}
+function roundRectT(x,l,t,w,h,r){
+  x.beginPath();
+  x.moveTo(l+r,t); x.lineTo(l+w-r,t); x.quadraticCurveTo(l+w,t,l+w,t+r);
+  x.lineTo(l+w,t+h-r); x.quadraticCurveTo(l+w,t+h,l+w-r,t+h);
+  x.lineTo(l+r,t+h); x.quadraticCurveTo(l,t+h,l,t+h-r);
+  x.lineTo(l,t+r); x.quadraticCurveTo(l,t,l+r,t); x.closePath();
+}
+function drawTypeCard(){
+  const W=1000,H=1250,c=document.createElement('canvas');
+  c.width=W;c.height=H;
+  const x=c.getContext('2d');
+  const BG='#FBF8F7',FG='#231C1F',MUT='#7C6E72',AC='#A33B5C',LINE='#E6DBDD',TRK='#F4EEEF';
+  const D='"Gowun Batang",serif', B='"Noto Sans KR",sans-serif';
+  const t=TY[myType.code];
+
+  x.fillStyle=BG;x.fillRect(0,0,W,H);
+  x.strokeStyle=LINE;x.lineWidth=2;x.strokeRect(40,40,W-80,H-80);
+  x.textAlign='center';x.textBaseline='alphabetic';
+
+  x.fillStyle=AC;x.font='700 30px '+B;
+  x.fillText('내 연애 유형',W/2,150);
+
+  x.fillStyle=AC;x.font='700 150px '+D;
+  x.fillText(myType.code,W/2,330);
+
+  x.fillStyle=FG; fitT(x,t.n,820,54,'700',D);
+  x.fillText(t.n,W/2,414);
+
+  const quote='"'+t.l+'"';
+  x.fillStyle=MUT; fitT(x,quote,820,29,'400',B);
+  x.fillText(quote,W/2,468);
+
+  x.strokeStyle=LINE;x.lineWidth=2;
+  x.beginPath();x.moveTo(220,540);x.lineTo(W-220,540);x.stroke();
+
+  const L=160, R=W-160, SPAN=R-L;
+  TAX.forEach(function(cfg,i){
+    const v=myType.s[cfg.k];
+    const cl=Math.max(-cfg.max,Math.min(cfg.max,v));
+    const pw=Math.round(50+Math.abs(cl)/cfg.max*50);
+    const pos=(1-(cl+cfg.max)/(cfg.max*2));
+    const ly=612+i*122, ty=ly+30;
+    const hiT=cfg.hi+' ('+cfg.H+')', loT=cfg.lo+' ('+cfg.L+')';
+    if(v>=0){
+      x.textAlign='left';
+      x.fillStyle=FG; x.font='700 29px '+B; x.fillText(hiT,L,ly);
+      const w=x.measureText(hiT).width;
+      x.fillStyle=AC; x.fillText(pw+'%',L+w+14,ly);
+      x.textAlign='right';
+      x.fillStyle=MUT; x.font='400 29px '+B; x.fillText(loT,R,ly);
+    }else{
+      x.textAlign='left';
+      x.fillStyle=MUT; x.font='400 29px '+B; x.fillText(hiT,L,ly);
+      x.textAlign='right';
+      x.fillStyle=AC; x.font='700 29px '+B; x.fillText(pw+'%',R,ly);
+      const w=x.measureText(pw+'%').width;
+      x.fillStyle=FG; x.fillText(loT,R-w-14,ly);
+    }
+    x.fillStyle=TRK; x.strokeStyle=LINE; x.lineWidth=2;
+    roundRectT(x,L,ty,SPAN,12,6); x.fill(); x.stroke();
+    x.strokeStyle=LINE; x.beginPath();
+    x.moveTo(L+SPAN/2,ty-5); x.lineTo(L+SPAN/2,ty+17); x.stroke();
+    x.fillStyle=AC; x.beginPath(); x.arc(L+SPAN*pos,ty+6,14,0,7); x.fill();
+  });
+
+  x.textAlign='center';
+  x.strokeStyle=LINE;x.lineWidth=2;
+  x.beginPath();x.moveTo(380,1116);x.lineTo(W-380,1116);x.stroke();
+  x.fillStyle=AC;x.font='500 28px '+B;
+  x.fillText(SITE.replace(/^https?:\/\//,'').replace(/\/$/,''),W/2,1164);
+  x.fillStyle=MUT;x.font='400 25px '+B;
+  x.fillText('제작자 : 엘제유',W/2,1206);
+  return c;
+}
+
 // 공유에 함께 보낼 사이트 주소. 주소를 옮기면 이 한 줄만 고치면 된다
 const SITE='https://darkburnin-lju.github.io/love-check/';
 
@@ -766,9 +857,9 @@ const IOS=/iPad|iPhone|iPod/.test(navigator.userAgent)||
 // 여기 안 적힌 앱도 있어서, 저장이 다 실패했을 때도 같은 길로 빠진다
 const INAPP=/KAKAOTALK|Instagram|FBAN|FBAV|FB_IAB|Line\/|NAVER|DaumApps|Threads|everytimeApp/i
             .test(navigator.userAgent);
-function showImage(c){
+function showImage(c,id){
   try{
-    const im=document.getElementById('fbimg');
+    const im=document.getElementById(id||'fbimg');
     im.src=c.toDataURL('image/png');   // blob 주소는 앱 안에서 길게 눌러 저장이 안 된다
     im.hidden=false;
     im.scrollIntoView({block:'nearest',behavior:'smooth'});
@@ -786,9 +877,21 @@ try{
 // 터치 기기: 클로드 저장 -> 다운로드
 // PC      : 저장 위치 선택 창 -> 클로드 저장 -> 다운로드
 // 진단 줄은 실패했을 때만 보인다
-async function saveImage(){
-  if(!last)return;
-  const b=document.getElementById('svimg'), st=document.getElementById('svstat');
+// 저장 대상이 두 가지다. 비교 결과 카드와, 혼자 풀었을 때의 유형 카드
+const SAVE={
+  match:{btn:'svimg', stat:'svstat',  img:'fbimg',
+         ok:function(){return !!last},
+         make:function(){return drawCard()},
+         name:function(){return 'match-'+last.pct+'.png'}},
+  type :{btn:'svtype',stat:'svtstat', img:'fbimg2',
+         ok:function(){return !!myType},
+         make:function(){return drawTypeCard()},
+         name:function(){return 'love-'+myType.code+'.png'}}
+};
+async function saveImage(kind){
+  const cf=SAVE[kind||'match'];
+  if(!cf.ok())return;
+  const b=document.getElementById(cf.btn), st=document.getElementById(cf.stat);
   const say=function(t){ st.textContent=t||''; st.hidden=!t };
   const reset=function(msg,hold){
     b.disabled=false; b.textContent=msg||'이미지 저장';
@@ -796,24 +899,24 @@ async function saveImage(){
   };
   b.disabled=true; b.textContent='만드는 중…'; say('');
 
-  document.getElementById('fbimg').hidden=true;
+  document.getElementById(cf.img).hidden=true;
 
   let blob=null, card=null;
   try{
     try{await document.fonts.ready}catch(e){}
-    card=drawCard();
+    card=cf.make();
     blob=await new Promise(function(res){ if(card.toBlob)card.toBlob(res,'image/png'); else res(null) });
   }catch(e){}
   if(!blob){ reset('저장 안 됨'); say('그림을 만들지 못했습니다. 화면을 캡처해 주세요.'); return }
 
   // 앱 안의 브라우저면 다운로드를 시도해봐야 오류만 뜨므로 바로 그림을 띄운다
-  if(INAPP && showImage(card)){
+  if(INAPP && showImage(card,cf.img)){
     reset();
     say('카톡·인스타 안에서는 바로 저장이 안 됩니다.\n아래 그림을 길게 눌러 저장해 주세요.');
     return;
   }
 
-  const name='match-'+last.pct+'.png';
+  const name=cf.name();
   const touch=window.matchMedia?matchMedia('(pointer:coarse)').matches:false;
 
   // 각 방법은 'saved' / 'none'(이 환경에 없음) / 'ERR:코드' 중 하나를 돌려준다
@@ -862,7 +965,7 @@ async function saveImage(){
     if(r==='ERR:AbortError'||r==='ERR:declined'){ reset(); say(''); return }   // 취소는 오류가 아니다
     // 그 밖의 오류면 다음 방법으로 넘어간다
   }
-  if(showImage(card)){
+  if(showImage(card,cf.img)){
     reset();
     say('바로 저장이 안 됩니다.\n아래 그림을 길게 눌러 저장해 주세요.');
     return;
