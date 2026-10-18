@@ -124,6 +124,11 @@ button{font-family:inherit;font-size:inherit;cursor:pointer}
 .tally{display:flex;justify-content:space-between;align-items:center;padding:14px 0;font-size:15px;border-top:1px solid var(--line)}
 .tally:first-child{border-top:none}
 .tally b{font-weight:500;font-variant-numeric:tabular-nums}
+/* 인라인 display 가 hidden 을 눌러버리는 걸 막는다 */
+[hidden]{display:none!important}
+/* 저장이 막힌 환경에서 길게 눌러 저장하라고 띄우는 그림 */
+.fbcard{display:block;width:100%;max-width:330px;margin:14px auto 0;
+  border:1px solid var(--line);border-radius:14px}
 /* 혼자 풀었을 때 나오는 유형 카드 */
 #mytype{background:var(--surface);border:1.5px solid var(--line);border-radius:18px;
   padding:30px 22px 26px;text-align:center;margin-bottom:34px}
@@ -219,8 +224,7 @@ button{font-family:inherit;font-size:inherit;cursor:pointer}
       <button class="btn ghost" id="svtype" onclick="saveImage('type')">이미지 저장</button>
     </div>
     <p id="svtstat" style="font-size:12.5px;color:var(--muted);margin:-24px 0 30px;text-align:center;line-height:1.6;white-space:pre-line" hidden></p>
-    <img id="fbimg2" alt="유형 카드" hidden
-         style="display:block;width:100%;max-width:330px;margin:-20px auto 32px;border:1px solid var(--line);border-radius:14px">
+    <img id="fbimg2" class="fbcard" alt="유형 카드" hidden style="margin:-20px auto 32px">
     <span class="eyebrow">내 코드</span>
     <h2 style="font-size:24px;margin:8px 0 16px">이 코드를 상대에게 보내세요</h2>
     <div class="code" id="mycode"></div>
@@ -279,8 +283,7 @@ button{font-family:inherit;font-size:inherit;cursor:pointer}
         <button class="btn ghost" id="cpres" onclick="copyResult()" hidden>결과 복사</button>
       </div>
       <p id="svstat" class="ts" style="font-size:12.5px;color:var(--muted);margin:12px 0 0;text-align:center;line-height:1.6;white-space:pre-line" hidden></p>
-      <img id="fbimg" alt="결과 카드" hidden
-           style="display:block;width:100%;max-width:330px;margin:14px auto 0;border:1px solid var(--line);border-radius:14px">
+      <img id="fbimg" class="fbcard" alt="결과 카드" hidden>
     </div>
     <p class="note">재미로 만든 체크리스트입니다. 점수가 낮다고 안 맞는 사이라는 뜻은 아니고, 다른 항목이 어디인지 보는 용도입니다.</p>
     <div class="row" style="margin-top:20px">
@@ -903,7 +906,9 @@ async function saveImage(kind){
 
   let blob=null, card=null;
   try{
-    try{await document.fonts.ready}catch(e){}
+    // 글꼴을 기다리되 오래 걸리면 그냥 진행한다. 안 그러면 버튼이 '만드는 중'에서 멈춘다
+    try{ await Promise.race([document.fonts.ready,
+         new Promise(function(r){setTimeout(r,3000)})]) }catch(e){}
     card=cf.make();
     blob=await new Promise(function(res){ if(card.toBlob)card.toBlob(res,'image/png'); else res(null) });
   }catch(e){}
