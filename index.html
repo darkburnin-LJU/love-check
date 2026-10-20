@@ -668,9 +668,8 @@ function makeImage(){
     rows.map(function(r){
       return '<div class="rw"><span><i style="background:'+r[2]+'"></i>'+r[0]+'</span><b>'+r[1]+'개</b></div>';
     }).join('')+
-    '<p class="tot">'+Q.length+'개 항목 중 '+last.total+'개 비교</p>'+
-    '<hr style="margin:18px 56px">'+
-    '<p class="by">제작자 : 엘제유</p>';
+    '<p class="tot">'+Q.length+'개 항목 중 '+last.total+'개 비교</p>';
+    // 제작자 표기는 카드에 넣지 않는다. 화면 맨 아래에만 둔다
   document.getElementById('cardbox').hidden=false;
   const h=document.getElementById('cardhint');
   h.textContent='이미지로 저장하거나 화면 캡처해서 공유하세요';
@@ -684,7 +683,7 @@ function makeImage(){
 }
 // 결과 카드를 캔버스에 그린다. 클립보드 복사용
 function drawCard(){
-  const W=1000,H=1250,c=document.createElement('canvas');
+  const W=1000,H=1120,c=document.createElement('canvas');   // 아래 여백만큼 줄였다
   c.width=W;c.height=H;
   const x=c.getContext('2d');
   const BG='#FBF8F7',FG='#231C1F',MUT='#7C6E72',AC='#A33B5C',LINE='#E6DBDD';
@@ -715,12 +714,7 @@ function drawCard(){
   x.textAlign='center';
   x.fillStyle=MUT;x.font='400 28px '+B;
   x.fillText(Q.length+'개 항목 중 '+last.total+'개 비교',W/2,1055);
-  x.strokeStyle=LINE;x.beginPath();x.moveTo(380,1098);x.lineTo(W-380,1098);x.stroke();
-  // 주소를 그림 안에 넣는다. 공유창이 글을 버려도 주소는 그림과 함께 간다
-  x.fillStyle=AC;x.font='500 29px '+B;
-  x.fillText(SITE.replace(/^https?:\/\//,'').replace(/\/$/,''),W/2,1148);
-  x.fillStyle=MUT;x.font='400 26px '+B;
-  x.fillText('제작자 : 엘제유',W/2,1192);
+  // 주소와 제작자는 넣지 않는다. 그림이 지저분해 보인다
   return c;
 }
 // 혼자 푼 사람이 올릴 유형 카드. 다크모드에서도 색을 고정한다
@@ -736,7 +730,7 @@ function roundRectT(x,l,t,w,h,r){
   x.lineTo(l,t+r); x.quadraticCurveTo(l,t,l+r,t); x.closePath();
 }
 function drawTypeCard(){
-  const W=1000,H=1250,c=document.createElement('canvas');
+  const W=1000,H=1090,c=document.createElement('canvas');   // 아래 여백만큼 줄였다
   c.width=W;c.height=H;
   const x=c.getContext('2d');
   const BG='#FBF8F7',FG='#231C1F',MUT='#7C6E72',AC='#A33B5C',LINE='#E6DBDD',TRK='#F4EEEF';
@@ -793,13 +787,7 @@ function drawTypeCard(){
     x.fillStyle=AC; x.beginPath(); x.arc(L+SPAN*pos,ty+6,14,0,7); x.fill();
   });
 
-  x.textAlign='center';
-  x.strokeStyle=LINE;x.lineWidth=2;
-  x.beginPath();x.moveTo(380,1116);x.lineTo(W-380,1116);x.stroke();
-  x.fillStyle=AC;x.font='500 28px '+B;
-  x.fillText(SITE.replace(/^https?:\/\//,'').replace(/\/$/,''),W/2,1164);
-  x.fillStyle=MUT;x.font='400 25px '+B;
-  x.fillText('제작자 : 엘제유',W/2,1206);
+  // 주소와 제작자는 넣지 않는다. 그림이 지저분해 보인다
   return c;
 }
 
